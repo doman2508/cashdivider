@@ -1,0 +1,192 @@
+.wrapper {
+  display: grid;
+  gap: 24px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  padding: 12px 4px 0;
+}
+
+.heroMeta {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.eyebrow,
+.metricLabel {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.copy {
+  color: var(--muted);
+}
+
+.metrics,
+.grid {
+  display: grid;
+  gap: 24px;
+}
+
+.metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel,
+.metricCard {
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--surface);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+.metricCard h3,
+.panel h3,
+.hero h2 {
+  margin: 0;
+  letter-spacing: -0.04em;
+}
+
+.metricCard h3 {
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+}
+
+.stack,
+.daysList {
+  display: grid;
+  gap: 14px;
+}
+
+.dayButton,
+.item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+}
+
+.dayButton {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dayButtonActive {
+  border-color: rgba(194, 109, 45, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(194, 109, 45, 0.18);
+  background: linear-gradient(160deg, rgba(194, 109, 45, 0.12), rgba(255, 253, 248, 0.94));
+}
+
+.item p,
+.dayButton p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.statusDone {
+  background: rgba(45, 106, 79, 0.14);
+  color: var(--success);
+}
+
+.buttonRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.primaryButton,
+.ghostButton {
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.primaryButton {
+  padding: 14px 18px;
+  background: linear-gradient(160deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(143, 71, 22, 0.28);
+}
+
+.ghostButton {
+  padding: 12px 16px;
+  background: rgba(255, 250, 242, 0.76);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+.primaryButton:hover,
+.ghostButton:hover,
+.dayButton:hover {
+  transform: translateY(-1px);
+}
+
+.empty {
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--bg-strong);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.error {
+  color: #b42318;
+}
+
+@media (max-width: 1120px) {
+  .metrics,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .panel,
+  .metricCard {
+    border-radius: 24px;
+  }
+
+  .hero,
+  .dayButton,
+  .item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .heroMeta {
+    justify-items: start;
+  }
+}
