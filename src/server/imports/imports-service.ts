@@ -16,6 +16,13 @@ type ImportInput = {
   content: string;
 };
 
+type ParsedTransactionsImportInput = {
+  sourceType: "ING_CSV" | "MANUAL";
+  sourceName: string;
+  fingerprintSource: string;
+  parsedTransactions: ParsedTransaction[];
+};
+
 function createFingerprint(value: string) {
   let hash = 0;
 
@@ -275,14 +282,12 @@ async function rebuildFinancialStateForDates(userId: string, affectedDates: stri
   }
 }
 
-export async function importTransactions(input: ImportInput) {
-  const user = await ensureDemoUser();
-  const fingerprint = createFingerprint(`${input.sourceType}|${input.sourceName}|${input.content}`);
-
+async function persistParsedTransactions(userId: string, input: ParsedTransactionsImportInput) {
+  const fingerprint = createFingerprint(input.fingerprintSource);
   const existingImport = await db.import.findUnique({
     where: {
       userId_fingerprint: {
-        userId: user.id,
+        userId,
         fingerprint,
       },
     },
@@ -292,10 +297,7 @@ export async function importTransactions(input: ImportInput) {
     throw new Error("IMPORT_ALREADY_EXISTS");
   }
 
-  const parsedTransactions =
-    input.sourceType === "ING_CSV" ? parseIngCsv(input.content) : parseManualTransactions(input.content);
-
-  if (!parsedTransactions.length) {
+  if (!input.parsedTransactions.length) {
     throw new Error("NO_TRANSACTIONS_FOUND");
   }
 
@@ -303,9 +305,9 @@ export async function importTransactions(input: ImportInput) {
     (
       await db.bankTransaction.findMany({
         where: {
-          userId: user.id,
+          userId,
           transactionKey: {
-            in: parsedTransactions.map((transaction) => transaction.transactionKey),
+            in: input.parsedTransactions.map((transaction) => transaction.transactionKey),
           },
         },
         select: { transactionKey: true },
@@ -313,16 +315,16 @@ export async function importTransactions(input: ImportInput) {
     ).map((transaction) => transaction.transactionKey),
   );
 
-  const freshTransactions = parsedTransactions.filter((transaction) => !existingKeys.has(transaction.transactionKey));
+  const freshTransactions = input.parsedTransactions.filter((transaction) => !existingKeys.has(transaction.transactionKey));
 
   const importRecord = await db.import.create({
     data: {
-      userId: user.id,
+      userId,
       sourceType: input.sourceType === "ING_CSV" ? ImportSourceType.ING_CSV : ImportSourceType.MANUAL,
       sourceName: input.sourceName,
       fingerprint,
       addedCount: freshTransactions.length,
-      skippedCount: parsedTransactions.length - freshTransactions.length,
+      skippedCount: input.parsedTransactions.length - freshTransactions.length,
     },
   });
 
@@ -330,14 +332,14 @@ export async function importTransactions(input: ImportInput) {
     return {
       importId: importRecord.id,
       addedCount: 0,
-      skippedCount: parsedTransactions.length,
+      skippedCount: input.parsedTransactions.length,
       affectedDates: [],
     };
   }
 
   await db.bankTransaction.createMany({
     data: freshTransactions.map((transaction) => ({
-      userId: user.id,
+      userId,
       importId: importRecord.id,
       bookingDate: toUtcDateOnly(transaction.bookingDate),
       amount: new Prisma.Decimal(transaction.amount.toFixed(2)),
@@ -348,12 +350,29 @@ export async function importTransactions(input: ImportInput) {
   });
 
   const affectedDates = [...new Set(freshTransactions.map((transaction) => transaction.bookingDate))];
-  await rebuildFinancialStateForDates(user.id, affectedDates);
+  await rebuildFinancialStateForDates(userId, affectedDates);
 
   return {
     importId: importRecord.id,
     addedCount: freshTransactions.length,
-    skippedCount: parsedTransactions.length - freshTransactions.length,
+    skippedCount: input.parsedTransactions.length - freshTransactions.length,
     affectedDates,
   };
+}
+
+export async function importParsedTransactions(input: ParsedTransactionsImportInput) {
+  const user = await ensureDemoUser();
+  return persistParsedTransactions(user.id, input);
+}
+
+export async function importTransactions(input: ImportInput) {
+  const parsedTransactions =
+    input.sourceType === "ING_CSV" ? parseIngCsv(input.content) : parseManualTransactions(input.content);
+
+  return importParsedTransactions({
+    sourceType: input.sourceType,
+    sourceName: input.sourceName,
+    fingerprintSource: `${input.sourceType}|${input.sourceName}|${input.content}`,
+    parsedTransactions,
+  });
 }

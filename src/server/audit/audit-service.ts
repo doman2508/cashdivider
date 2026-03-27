@@ -17,6 +17,7 @@ export async function listImports() {
     id: entry.id,
     sourceType: entry.sourceType,
     sourceName: entry.sourceName,
+    sourceLabel: entry.sourceName.startsWith("TrueLayer") ? "TrueLayer sync" : entry.sourceType,
     fingerprint: entry.fingerprint,
     importedAt: entry.importedAt.toISOString(),
     addedCount: entry.addedCount,

@@ -8,6 +8,7 @@ type ImportEntry = {
   id: string;
   sourceType: "ING_CSV" | "MANUAL";
   sourceName: string;
+  sourceLabel: string;
   importedAt: string;
   addedCount: number;
   skippedCount: number;
@@ -87,7 +88,7 @@ export function AuditDashboard({ refreshKey = 0, lastImportedDates = [] }: Audit
                       {entry.skippedCount}
                     </p>
                   </div>
-                  <span className={styles.status}>{entry.sourceType}</span>
+                  <span className={styles.status}>{entry.sourceLabel}</span>
                 </div>
               ))
             ) : (

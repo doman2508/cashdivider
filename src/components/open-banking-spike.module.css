@@ -1,0 +1,93 @@
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.copy {
+  color: var(--muted);
+}
+
+.statusCard {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--surface-tint);
+  border: 1px solid var(--line);
+}
+
+.statusCard p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badgeReady {
+  background: rgba(45, 106, 79, 0.14);
+  color: var(--success);
+}
+
+.badgePlanned {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.warning {
+  color: var(--warning);
+}
+
+.success {
+  color: var(--success);
+}
+
+.primaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 18px;
+  border-radius: 999px;
+  background: linear-gradient(160deg, var(--accent), var(--accent-strong));
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(23, 72, 51, 0.18);
+}
+
+@media (max-width: 720px) {
+  .panel {
+    border-radius: 20px;
+  }
+
+  .statusCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .primaryLink {
+    width: 100%;
+  }
+}

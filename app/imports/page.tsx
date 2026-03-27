@@ -6,7 +6,7 @@ export default function ImportsPage() {
     <AppShell
       currentPath="/imports"
       title="Importy"
-      description="Tutaj wrzucasz wyciag z banku i od razu widzisz, co system zaimportowal oraz jakie dni zostaly odswiezone."
+      description="Tutaj budujemy droge od recznego CSV do automatycznego syncu banku, a po drodze nadal masz bezpieczny backup."
     >
       <ImportsWorkspace />
     </AppShell>

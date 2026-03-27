@@ -5,7 +5,7 @@ import { isAccessProtectionEnabled } from "@/src/server/auth/session";
 import styles from "./app-shell.module.css";
 
 type AppShellProps = {
-  currentPath: "/" | "/month" | "/imports" | "/rules";
+  currentPath: string;
   title: string;
   description: string;
   children: ReactNode;
@@ -20,6 +20,14 @@ const navigation = [
 
 export function AppShell({ currentPath, title, description, children }: AppShellProps) {
   const isProtected = isAccessProtectionEnabled();
+
+  function isActivePath(href: string) {
+    if (href === "/") {
+      return currentPath === "/";
+    }
+
+    return currentPath === href || currentPath.startsWith(`${href}/`);
+  }
 
   return (
     <main className={styles.shell}>
@@ -37,7 +45,7 @@ export function AppShell({ currentPath, title, description, children }: AppShell
             <Link
               key={item.href}
               href={item.href}
-              className={`${styles.navLink} ${currentPath === item.href ? styles.navLinkActive : ""}`}
+              className={`${styles.navLink} ${isActivePath(item.href) ? styles.navLinkActive : ""}`}
             >
               {item.label}
             </Link>
