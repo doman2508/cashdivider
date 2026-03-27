@@ -130,10 +130,9 @@ export function RulesManager() {
     <section className={styles.wrapper}>
       <div>
         <p className={styles.eyebrow}>Ustawienia</p>
-        <h2>Reguly na prawdziwej bazie</h2>
+        <h2>Reguly podzialu</h2>
         <p className={styles.copy}>
-          Ten widok jest juz podpiety do Railway Postgresa przez Prisma. Dodawanie, edycja i usuwanie regul zapisuje
-          sie w bazie.
+          Tutaj ustawiasz kategorie, procenty i rachunki docelowe. Kazda zmiana zapisuje sie od razu w bazie.
         </p>
       </div>
 

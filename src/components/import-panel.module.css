@@ -1,8 +1,7 @@
 .panel {
   border: 1px solid var(--line);
-  border-radius: 28px;
+  border-radius: 22px;
   background: var(--surface);
-  backdrop-filter: blur(14px);
   box-shadow: var(--shadow);
   padding: 24px;
   display: grid;
@@ -40,15 +39,15 @@
   width: 100%;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1px solid rgba(93, 76, 56, 0.18);
-  background: rgba(255, 253, 248, 0.92);
+  border: 1px solid var(--line);
+  background: var(--surface-tint);
   color: var(--text);
 }
 
 .form input:focus,
 .form textarea:focus,
 .form select:focus {
-  outline: 2px solid rgba(194, 109, 45, 0.24);
+  outline: 2px solid rgba(31, 92, 66, 0.18);
   border-color: var(--accent);
 }
 
@@ -71,12 +70,12 @@
   background: linear-gradient(160deg, var(--accent), var(--accent-strong));
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 12px 24px rgba(143, 71, 22, 0.28);
+  box-shadow: 0 12px 24px rgba(23, 72, 51, 0.18);
 }
 
 .ghostButton {
   padding: 12px 16px;
-  background: rgba(255, 250, 242, 0.76);
+  background: rgba(255, 253, 249, 0.86);
   color: var(--text);
   border: 1px solid var(--line);
 }

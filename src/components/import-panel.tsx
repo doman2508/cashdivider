@@ -4,7 +4,14 @@ import { useState, useTransition } from "react";
 import styles from "./import-panel.module.css";
 
 type ImportPanelProps = {
-  onImported: () => Promise<void> | void;
+  onImported: (result: ImportResult) => Promise<void> | void;
+};
+
+export type ImportResult = {
+  importId: string;
+  addedCount: number;
+  skippedCount: number;
+  affectedDates: string[];
 };
 
 export function ImportPanel({ onImported }: ImportPanelProps) {
@@ -71,12 +78,13 @@ export function ImportPanel({ onImported }: ImportPanelProps) {
         return;
       }
 
+      const result = payload.data as ImportResult;
       setStatus(
-        `Zaimportowano ${payload.data.addedCount} transakcji, pominieto ${payload.data.skippedCount}. Dotkniete dni: ${
-          payload.data.affectedDates.join(", ") || "brak"
+        `Zaimportowano ${result.addedCount} transakcji, pominieto ${result.skippedCount}. Dotkniete dni: ${
+          result.affectedDates.join(", ") || "brak"
         }.`,
       );
-      await onImported();
+      await onImported(result);
     });
   }
 
@@ -117,7 +125,7 @@ export function ImportPanel({ onImported }: ImportPanelProps) {
 
         <div className={styles.buttonRow}>
           <button className={styles.primaryButton} type="submit" disabled={isPending}>
-            Importuj transakcje
+            {isPending ? "Importowanie..." : "Importuj transakcje"}
           </button>
           <button className={styles.ghostButton} type="button" onClick={fillManualDemo} disabled={isPending}>
             Wklej demo manualne
@@ -125,7 +133,9 @@ export function ImportPanel({ onImported }: ImportPanelProps) {
         </div>
       </form>
 
-      <p className={styles.helper}>Po udanym imporcie dashboard odswiezy dni i szczegoly wybranego dnia.</p>
+      <p className={styles.helper}>
+        {isPending ? "System importuje plik, zapisuje transakcje i przebudowuje dni oraz paczki przelewow." : "Po udanym imporcie odswieza sie historia importow i dane dni."}
+      </p>
       {error ? <p className={styles.error}>{error}</p> : null}
       {status ? <p className={styles.status}>{status}</p> : null}
     </section>

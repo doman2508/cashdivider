@@ -1,0 +1,67 @@
+import Link from "next/link";
+import { ReactNode } from "react";
+import { LogoutButton } from "@/src/components/logout-button";
+import { isAccessProtectionEnabled } from "@/src/server/auth/session";
+import styles from "./app-shell.module.css";
+
+type AppShellProps = {
+  currentPath: "/" | "/month" | "/imports" | "/rules";
+  title: string;
+  description: string;
+  children: ReactNode;
+};
+
+const navigation = [
+  { href: "/" as const, label: "Dashboard" },
+  { href: "/month" as const, label: "Miesiac" },
+  { href: "/imports" as const, label: "Importy" },
+  { href: "/rules" as const, label: "Reguly" },
+];
+
+export function AppShell({ currentPath, title, description, children }: AppShellProps) {
+  const isProtected = isAccessProtectionEnabled();
+
+  return (
+    <main className={styles.shell}>
+      <aside className={styles.sidebar}>
+        <div>
+          <p className={styles.eyebrow}>CashDivider</p>
+          <h1>Dzienny autopilot dla wplywow</h1>
+          <p className={styles.copy}>
+            Narzedzie do codziennego rozdzielania wplywow freelancera, zanim pieniadze zdaza sie rozplynac.
+          </p>
+        </div>
+
+        <nav className={styles.nav}>
+          {navigation.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`${styles.navLink} ${currentPath === item.href ? styles.navLinkActive : ""}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <section className={styles.panelAccent}>
+          <p className={styles.eyebrow}>Aktualny widok</p>
+          <h2>{title}</h2>
+          <p>{description}</p>
+        </section>
+
+        <section className={styles.panel}>
+          <p className={styles.eyebrow}>Tryb aplikacji</p>
+          <ul className={styles.list}>
+            <li>{isProtected ? "Dostep chroniony haslem" : "Tryb otwarty bez blokady"}</li>
+            <li>Jedna instancja dla jednego wlasciciela</li>
+            <li>Kolejny krok: pelniejsze logowanie</li>
+          </ul>
+          {isProtected ? <LogoutButton /> : null}
+        </section>
+      </aside>
+
+      <section className={styles.content}>{children}</section>
+    </main>
+  );
+}

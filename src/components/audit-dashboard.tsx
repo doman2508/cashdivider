@@ -24,15 +24,22 @@ type BatchEntry = {
   itemCount: number;
 };
 
-export function AuditDashboard() {
+type AuditDashboardProps = {
+  refreshKey?: number;
+  lastImportedDates?: string[];
+};
+
+export function AuditDashboard({ refreshKey = 0, lastImportedDates = [] }: AuditDashboardProps) {
   const [imports, setImports] = useState<ImportEntry[]>([]);
   const [batches, setBatches] = useState<BatchEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     void loadAuditData();
-  }, []);
+  }, [refreshKey]);
 
   async function loadAuditData() {
+    setIsLoading(true);
     const [importsResponse, batchesResponse] = await Promise.all([
       fetch("/api/imports/history", { cache: "no-store" }),
       fetch("/api/batches", { cache: "no-store" }),
@@ -43,16 +50,34 @@ export function AuditDashboard() {
 
     setImports(importsPayload.data);
     setBatches(batchesPayload.data);
+    setIsLoading(false);
   }
 
   return (
     <section className={styles.wrapper}>
+      {lastImportedDates.length ? (
+        <section className={styles.panel}>
+          <p className={styles.eyebrow}>Ostatni import</p>
+          <h3>Dotkniete dni</h3>
+          <div className={styles.list}>
+            <div className={styles.item}>
+              <div>
+                <p className={styles.itemTitle}>{lastImportedDates.join(", ")}</p>
+                <p className={styles.itemMeta}>Te dni zostaly odswiezone po ostatnim imporcie.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section className={styles.grid}>
         <article className={styles.panel}>
           <p className={styles.eyebrow}>Importy</p>
           <h3>Historia importow</h3>
           <div className={styles.list}>
-            {imports.length ? (
+            {isLoading ? (
+              <div className={styles.empty}>Ladowanie historii importow...</div>
+            ) : imports.length ? (
               imports.map((entry) => (
                 <div key={entry.id} className={styles.item}>
                   <div>
@@ -75,7 +100,9 @@ export function AuditDashboard() {
           <p className={styles.eyebrow}>Paczki</p>
           <h3>Historia paczek przelewow</h3>
           <div className={styles.list}>
-            {batches.length ? (
+            {isLoading ? (
+              <div className={styles.empty}>Ladowanie historii paczek...</div>
+            ) : batches.length ? (
               batches.map((batch) => (
                 <div key={batch.id} className={styles.item}>
                   <div>

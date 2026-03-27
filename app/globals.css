@@ -1,16 +1,24 @@
 :root {
-  --bg: #f6f1e8;
-  --bg-strong: #fffaf2;
-  --surface: rgba(255, 250, 242, 0.86);
-  --surface-strong: #fffdf8;
-  --text: #1c1917;
-  --muted: #6b6157;
-  --line: rgba(93, 76, 56, 0.12);
-  --accent: #c26d2d;
-  --accent-strong: #8f4716;
-  --accent-soft: rgba(194, 109, 45, 0.14);
-  --success: #2d6a4f;
-  --shadow: 0 20px 50px rgba(39, 30, 20, 0.12);
+  --bg: #f3efe5;
+  --bg-strong: #faf7f1;
+  --surface: rgba(255, 253, 248, 0.9);
+  --surface-strong: #fffdf9;
+  --surface-tint: #f6f1e8;
+  --text: #1b241d;
+  --muted: #667065;
+  --line: rgba(68, 82, 68, 0.12);
+  --accent: #1f5c42;
+  --accent-strong: #174833;
+  --accent-soft: rgba(31, 92, 66, 0.12);
+  --success: #2e7d5a;
+  --warning: #b7791f;
+  --warning-soft: rgba(183, 121, 31, 0.14);
+  --sidebar-bg: #1d3329;
+  --sidebar-surface: rgba(255, 255, 255, 0.06);
+  --sidebar-line: rgba(255, 255, 255, 0.1);
+  --sidebar-text: #f2f4ee;
+  --sidebar-muted: rgba(242, 244, 238, 0.7);
+  --shadow: 0 24px 48px rgba(28, 36, 29, 0.08);
   font-family: "Manrope", sans-serif;
 }
 
@@ -24,19 +32,29 @@ body {
   min-height: 100%;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(194, 109, 45, 0.22), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(45, 106, 79, 0.18), transparent 30%),
-    linear-gradient(135deg, #efe3d0, var(--bg));
+    radial-gradient(circle at top left, rgba(31, 92, 66, 0.12), transparent 26%),
+    radial-gradient(circle at top right, rgba(183, 121, 31, 0.08), transparent 22%),
+    linear-gradient(180deg, #f7f3ea, var(--bg));
 }
 
 body {
   font-family: "Manrope", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
+}
+
+input,
+textarea,
+select,
+button {
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {

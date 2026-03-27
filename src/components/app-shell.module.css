@@ -1,0 +1,138 @@
+.shell {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  padding: 24px;
+}
+
+.panel,
+.panelAccent {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.sidebar {
+  border: 1px solid var(--sidebar-line);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top left, rgba(122, 160, 132, 0.12), transparent 28%),
+    linear-gradient(180deg, #22392d, var(--sidebar-bg));
+  box-shadow: 0 24px 48px rgba(16, 24, 19, 0.16);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: calc(100vh - 48px);
+  position: sticky;
+  top: 24px;
+  color: var(--sidebar-text);
+}
+
+.content {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}
+
+.nav {
+  display: grid;
+  gap: 10px;
+}
+
+.navLink {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--sidebar-line);
+  background: var(--sidebar-surface);
+  color: var(--sidebar-text);
+  font-weight: 600;
+  transition: 120ms ease;
+}
+
+.navLink:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.navLinkActive {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--sidebar-muted);
+}
+
+.copy {
+  color: var(--sidebar-muted);
+}
+
+.panel,
+.panelAccent {
+  padding: 24px;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--sidebar-line);
+}
+
+.panelAccent {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+  border-color: var(--sidebar-line);
+}
+
+.list {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--sidebar-muted);
+}
+
+.sidebar :global(button) {
+  justify-self: start;
+}
+
+.sidebar h1,
+.sidebar h2 {
+  margin: 0;
+  letter-spacing: -0.04em;
+}
+
+@media (max-width: 1120px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    min-height: auto;
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding: 16px;
+  }
+
+  .nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .navLink {
+    text-align: center;
+  }
+
+  .sidebar,
+  .panel,
+  .panelAccent {
+    border-radius: 20px;
+  }
+}

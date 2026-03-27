@@ -22,15 +22,17 @@ Szkielet aplikacji `Next.js + Prisma + PostgreSQL` przygotowany pod wdrozenie na
 - historia importow i paczek czytajaca z backendu
 - UI importu CSV z ING i recznego payloadu
 - konfiguracja pod Railway i `DATABASE_URL`
+- prosta blokada dostepu haslem aplikacji przez `APP_PASSWORD`
 
 ## Jak odpalic lokalnie
 
 1. Skopiuj `.env.example` do `.env`.
 2. Ustaw `DATABASE_URL` do lokalnego lub Railway Postgresa.
-3. Zainstaluj zaleznosci: `npm install`
-4. Wygeneruj klienta Prisma: `npm run prisma:generate`
-5. Po podpieciu bazy uruchom migracje: `npm run prisma:push`
-6. Uruchom aplikacje: `npm run dev`
+3. Opcjonalnie ustaw `APP_PASSWORD` i `APP_SESSION_SALT`, jesli chcesz zablokowac dostep do online'owej instancji.
+4. Zainstaluj zaleznosci: `npm install`
+5. Wygeneruj klienta Prisma: `npm run prisma:generate`
+6. Po podpieciu bazy uruchom migracje: `npm run prisma:push`
+7. Uruchom aplikacje: `npm run dev`
 
 ## Docelowy model danych
 
@@ -44,6 +46,6 @@ Szkielet aplikacji `Next.js + Prisma + PostgreSQL` przygotowany pod wdrozenie na
 
 ## Najblizsze kroki
 
-- podlaczyc pierwszy realny import ING z UI i sprawdzic efekt w dashboardzie
-- dodac historie importow i paczek na bazie danych
-- przygotowac pierwszy deploy aplikacji na Railway
+- zastapic demo usera pelniejszym modelem logowania
+- dopracowac workflow dnia po imporcie i zamknieciu paczki
+- przygotowac grunt pod eksport lub automatyzacje paczek przelewow

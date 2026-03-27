@@ -11,9 +11,8 @@
 
 .panel {
   border: 1px solid var(--line);
-  border-radius: 28px;
+  border-radius: 22px;
   background: var(--surface);
-  backdrop-filter: blur(14px);
   box-shadow: var(--shadow);
   padding: 24px;
 }
@@ -37,8 +36,8 @@
   gap: 16px;
   align-items: center;
   padding: 16px 18px;
-  border-radius: 18px;
-  background: var(--surface-strong);
+  border-radius: 16px;
+  background: var(--surface-tint);
   border: 1px solid var(--line);
 }
 
@@ -60,8 +59,8 @@
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 700;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .statusDone {
@@ -71,7 +70,7 @@
 
 .empty {
   padding: 18px;
-  border-radius: 20px;
+  border-radius: 16px;
   background: var(--bg-strong);
   border: 1px solid var(--line);
   color: var(--muted);
@@ -85,7 +84,7 @@
 
 @media (max-width: 720px) {
   .panel {
-    border-radius: 24px;
+    border-radius: 20px;
   }
 
   .item {
