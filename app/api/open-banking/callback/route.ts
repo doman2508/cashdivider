@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getOpenBankingSpikeStatus,
   getOpenBankingStateCookieName,
-  importTrueLayerMockData,
+  importTrueLayerData,
 } from "@/src/server/open-banking/open-banking-service";
 
 export async function GET(request: Request) {
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await importTrueLayerMockData(code);
+    const result = await importTrueLayerData(code);
     callbackPageUrl.searchParams.set("status", "imported");
     callbackPageUrl.searchParams.set("added", String(result.addedCount));
     callbackPageUrl.searchParams.set("skipped", String(result.skippedCount));

@@ -45,6 +45,10 @@ function readMockAuthUrl() {
   return process.env.MOCK_AUTH?.trim() || "";
 }
 
+function readPreferredProviderId() {
+  return process.env.OPEN_BANKING_TRUELAYER_PROVIDER_ID?.trim() || "";
+}
+
 function readEnvironment() {
   const explicitEnvironment = process.env.OPEN_BANKING_ENVIRONMENT?.trim().toLowerCase();
 
@@ -172,10 +176,18 @@ export function buildTrueLayerAuthUrl(state: string) {
   url.searchParams.set("redirect_uri", readRedirectUri());
   url.searchParams.set("scope", "info accounts balance transactions offline_access");
   url.searchParams.set("state", state);
-  url.searchParams.set("providers", "uk-cs-mock");
-  url.searchParams.set("provider_id", "uk-cs-mock");
-  url.searchParams.set("user_email", DEMO_USER_EMAIL);
   url.searchParams.set("language_id", "pl");
+
+  const preferredProviderId = readPreferredProviderId();
+  if (preferredProviderId) {
+    url.searchParams.set("provider_id", preferredProviderId);
+  }
+
+  if (readEnvironment() === "sandbox") {
+    url.searchParams.set("providers", "uk-cs-mock");
+    url.searchParams.set("provider_id", preferredProviderId || "uk-cs-mock");
+    url.searchParams.set("user_email", DEMO_USER_EMAIL);
+  }
 
   return url.toString();
 }
@@ -242,7 +254,7 @@ async function fetchTrueLayerTransactions(accessToken: string, accountId: string
   return payload.results;
 }
 
-export async function importTrueLayerMockData(code: string) {
+export async function importTrueLayerData(code: string) {
   const token = await exchangeCodeForToken(code);
   const accounts = await fetchTrueLayerAccounts(token.access_token);
 
@@ -275,8 +287,10 @@ export async function importTrueLayerMockData(code: string) {
 
   const importResult = await importParsedTransactions({
     sourceType: "MANUAL",
-    sourceName: "TrueLayer Mock",
-    fingerprintSource: `TRUELAYER|MOCK|${code}|${parsedTransactions.map((item) => item.transactionKey).join("|")}`,
+    sourceName: readEnvironment() === "sandbox" ? "TrueLayer Mock" : "TrueLayer Live",
+    fingerprintSource: `TRUELAYER|${readEnvironment().toUpperCase()}|${code}|${parsedTransactions
+      .map((item) => item.transactionKey)
+      .join("|")}`,
     parsedTransactions,
   });
 

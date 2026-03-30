@@ -36,14 +36,16 @@ export function OpenBankingSpike() {
     setStatus(payload.data);
   }
 
+  const isLive = status?.environment === "live";
+
   return (
     <section className={styles.panel}>
       <div>
-        <p className={styles.eyebrow}>Spike AIS</p>
+        <p className={styles.eyebrow}>AIS sync</p>
         <h3>Podlacz bank</h3>
         <p className={styles.copy}>
           Tu uruchamiasz consent flow providera i sprawdzasz, czy CashDivider potrafi pobrac konta oraz uznania bez
-          recznego CSV.
+          recznego CSV. W trybie live TrueLayer pozwoli wybrac realny bank, np. ING.
         </p>
       </div>
 
@@ -69,7 +71,7 @@ export function OpenBankingSpike() {
                 : "Brak danych"}
             </p>
           </div>
-          <span className={`${styles.badge} ${styles.badgeReady}`}>Polaczone</span>
+          <span className={`${styles.badge} ${styles.badgeReady}`}>{isLive ? "Live aktywny" : "Polaczone"}</span>
         </div>
       ) : null}
 
@@ -79,12 +81,14 @@ export function OpenBankingSpike() {
         <p className={styles.success}>
           {status?.connection.connected
             ? `Ostatni sync ${status.connection.lastSourceName ?? "TrueLayer"} dodal ${status.connection.lastAddedCount} transakcji.`
-            : "Konfiguracja wyglada dobrze. Mozesz uruchomic pierwszy sync przez provider flow."}
+            : isLive
+              ? "Konfiguracja live wyglada dobrze. Po kliknieciu wybierzesz bank z listy TrueLayer."
+              : "Konfiguracja wyglada dobrze. Mozesz uruchomic pierwszy sync przez provider flow."}
         </p>
       )}
 
       <a className={styles.primaryLink} href="/api/open-banking/connect">
-        {status?.connection.connected ? "Synchronizuj ponownie" : "Uruchom flow spike'a"}
+        {status?.connection.connected ? "Synchronizuj ponownie" : "Podlacz bank"}
       </a>
     </section>
   );

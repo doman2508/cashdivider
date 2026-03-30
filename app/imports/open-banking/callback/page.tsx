@@ -35,14 +35,14 @@ export default async function OpenBankingCallbackPage({ searchParams }: Callback
     <AppShell
       currentPath="/imports/open-banking/callback"
       title="Open banking callback"
-      description="Tutaj konczy sie flow providera. Na tym etapie sprawdzamy, czy TrueLayer Mock potrafi oddac dane, ktore CashDivider umie zamienic na dni i paczki."
+      description="Tutaj konczy sie flow providera. Na tym etapie sprawdzamy, czy TrueLayer oddaje dane, ktore CashDivider umie zamienic na dni i paczki."
     >
       <section className={styles.wrapper}>
         <article className={styles.heroCard}>
           <p className={styles.eyebrow}>Callback</p>
           <h2>
             {status === "imported"
-              ? "Import z TrueLayer Mock zakonczyl sie powodzeniem"
+              ? "Import z TrueLayer zakonczyl sie powodzeniem"
               : status === "missing_config"
                 ? "Brakuje konfiguracji do prawdziwego flow"
                 : "Flow wymaga poprawki lub dopiecia"}
