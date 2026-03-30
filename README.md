@@ -30,7 +30,7 @@ Szkielet aplikacji `Next.js + Prisma + PostgreSQL` przygotowany pod wdrozenie na
 1. Skopiuj `.env.example` do `.env`.
 2. Ustaw `DATABASE_URL` do lokalnego lub Railway Postgresa.
 3. Opcjonalnie ustaw `APP_PASSWORD` i `APP_SESSION_SALT`, jesli chcesz zablokowac dostep do online'owej instancji.
-4. Jesli chcesz przygotowac auto-import, uzupelnij tez `OPEN_BANKING_PROVIDER`, `OPEN_BANKING_CLIENT_ID`, `OPEN_BANKING_CLIENT_SECRET` i `OPEN_BANKING_REDIRECT_URI`. Dla prawdziwego banku ustaw `OPEN_BANKING_ENVIRONMENT=live`, a opcjonalnie podaj `OPEN_BANKING_TRUELAYER_PROVIDER_ID`, jesli chcesz preselect konkretnego banku w TrueLayer.
+4. Jesli chcesz przygotowac auto-import, uzupelnij tez `OPEN_BANKING_PROVIDER`, `OPEN_BANKING_CLIENT_ID`, `OPEN_BANKING_CLIENT_SECRET` i `OPEN_BANKING_REDIRECT_URI`. Dla prawdziwego banku ustaw `OPEN_BANKING_ENVIRONMENT=live`, a opcjonalnie podaj `OPEN_BANKING_TRUELAYER_PROVIDER_ID`, jesli chcesz preselect konkretnego banku w TrueLayer. Jesli chcesz uzyc linku wygenerowanego przez TrueLayer Builder 1:1, ustaw `OPEN_BANKING_AUTH_URL`.
 5. Zainstaluj zaleznosci: `npm install`
 6. Wygeneruj klienta Prisma: `npm run prisma:generate`
 7. Po podpieciu bazy uruchom migracje: `npm run prisma:push`

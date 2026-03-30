@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   buildMissingConfigCallbackUrl,
-  buildTrueLayerAuthUrl,
+  buildOpenBankingAuthUrl,
   createOpenBankingState,
   getOpenBankingSpikeStatus,
   getOpenBankingStateCookieName,
@@ -12,11 +12,11 @@ export async function GET(request: Request) {
   const status = await getOpenBankingSpikeStatus();
 
   if (!status.isConfigured) {
-    return NextResponse.redirect(buildMissingConfigCallbackUrl(origin));
+    return NextResponse.redirect(await buildMissingConfigCallbackUrl(origin));
   }
 
   const state = createOpenBankingState();
-  const response = NextResponse.redirect(buildTrueLayerAuthUrl(state));
+  const response = NextResponse.redirect(await buildOpenBankingAuthUrl(state));
 
   response.cookies.set({
     name: getOpenBankingStateCookieName(),

@@ -11,14 +11,14 @@ const providerDefinitions: ProviderDefinition[] = [
   {
     id: "TRUELAYER",
     label: "TrueLayer",
-    marketFit: "Najlepszy kandydat do pierwszego spike'a z kontem Mock i Data API.",
-    notes: "Dobry dev experience na start, szybki test auth linku, callbacku i pobrania testowych transakcji.",
+    marketFit: "Technicznie sprawdzony adapter open banking, ale slaby coverage dla polskich bankow detalicznych.",
+    notes: "Zostaje jako dzialajacy adapter referencyjny i baza pod kolejnych providerow.",
   },
   {
     id: "KONTOMATIK",
     label: "Kontomatik",
-    marketFit: "Mocny plan B pod Polske i CEE.",
-    notes: "Warto go trzymac jako alternatywe, jesli coverage lub onboarding TrueLayer nie siadzie tak, jak chcemy.",
+    marketFit: "Najbardziej obiecujacy kierunek pod Polske i CEE.",
+    notes: "To teraz naturalny kandydat do kolejnego adaptera i realnego auto-importu polskich bankow.",
   },
   {
     id: "GOCARDLESS",
@@ -34,7 +34,7 @@ export function getDataSourcesSummary() {
   const hasClientSecret = Boolean(process.env.OPEN_BANKING_CLIENT_SECRET?.trim());
   const hasRedirectUri = Boolean(process.env.OPEN_BANKING_REDIRECT_URI?.trim());
 
-  const recommendedProvider = providerDefinitions[0];
+  const recommendedProvider = providerDefinitions[1];
   const activeProvider = providerDefinitions.find((provider) => provider.id === configuredProvider) ?? null;
   const isOpenBankingConfigured = Boolean(activeProvider && hasClientId && hasClientSecret && hasRedirectUri);
 
