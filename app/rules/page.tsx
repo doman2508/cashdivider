@@ -2,6 +2,8 @@ import { AppShell } from "@/src/components/app-shell";
 import { RulesManager } from "@/src/components/rules-manager";
 import { listRules } from "@/src/server/rules/rules-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function RulesPage() {
   const initialRules = await listRules();
 

@@ -3,6 +3,8 @@ import { AccountBalancesPanel } from "@/src/components/account-balances-panel";
 import { DaysDashboard } from "@/src/components/days-dashboard";
 import { getDashboardSnapshot } from "@/src/server/dashboard/dashboard-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const snapshot = await getDashboardSnapshot();
 

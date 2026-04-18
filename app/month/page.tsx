@@ -2,6 +2,8 @@ import { AppShell } from "@/src/components/app-shell";
 import { MonthSummary } from "@/src/components/month-summary";
 import { getMonthSummary } from "@/src/server/summary/month-summary-service";
 
+export const dynamic = "force-dynamic";
+
 function getCurrentMonth() {
   const now = new Date();
   const year = now.getUTCFullYear();

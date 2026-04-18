@@ -4,6 +4,8 @@ import { listBatches, listImports } from "@/src/server/audit/audit-service";
 import { getDataSourcesSummary } from "@/src/server/data-sources/data-sources-service";
 import { getOpenBankingSpikeStatus } from "@/src/server/open-banking/open-banking-service";
 
+export const dynamic = "force-dynamic";
+
 export default async function ImportsPage() {
   const [initialDataSources, initialOpenBankingStatus, initialImports, initialBatches] = await Promise.all([
     getDataSourcesSummary(),
