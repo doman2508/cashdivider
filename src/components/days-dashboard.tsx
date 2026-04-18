@@ -4,16 +4,17 @@ import { useEffect, useState, useTransition } from "react";
 import { fullDate, pln } from "@/src/lib/format";
 import styles from "./days-dashboard.module.css";
 
-type BatchItem = {
+export type BatchItem = {
   id: string;
   categoryName: string;
   targetLabel: string;
   targetAccountNumber: string;
   amount: number;
   paymentType: string;
+  transferTitle: string;
 };
 
-type PaymentBatch = {
+export type PaymentBatch = {
   id: string;
   status: "GENERATED" | "COMPLETED";
   totalAmount: number;
@@ -23,22 +24,43 @@ type PaymentBatch = {
   items: BatchItem[];
 };
 
-type DayListItem = {
+export type DayListItem = {
   id: string;
   date: string;
   totalIncome: number;
   status: "OPEN" | "SETTLED";
+  includeInBatch: boolean;
   settledAt: string | null;
   paymentBatch: PaymentBatch | null;
 };
 
-type DayDetail = DayListItem & {
+export type DayDetail = DayListItem & {
   transactions: Array<{
     id: string;
     bookingDate: string;
     amount: number;
     description: string;
     counterparty: string | null;
+    isExcluded: boolean;
+    excludedAt: string | null;
+  }>;
+};
+
+export type OpenDaysBatch = {
+  dayCount: number;
+  totalIncome: number;
+  totalAmount: number;
+  leftoverAmount: number;
+  dateFrom: string | null;
+  dateTo: string | null;
+  items: Array<{
+    key: string;
+    categoryName: string;
+    targetLabel: string;
+    targetAccountNumber: string;
+    amount: number;
+    paymentType: string;
+    transferTitle: string;
   }>;
 };
 
@@ -57,19 +79,39 @@ function pickPreferredDate(days: DayListItem[], current: string | null) {
   return latestOpenDay?.date ?? days[0]?.date ?? null;
 }
 
-export function DaysDashboard() {
-  const [days, setDays] = useState<DayListItem[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<DayDetail | null>(null);
+type DaysDashboardProps = {
+  initialDays?: DayListItem[];
+  initialSelectedDate?: string | null;
+  initialSelectedDay?: DayDetail | null;
+  initialOpenBatch?: OpenDaysBatch | null;
+};
+
+export function DaysDashboard({
+  initialDays = [],
+  initialSelectedDate = null,
+  initialSelectedDay = null,
+  initialOpenBatch = null,
+}: DaysDashboardProps) {
+  const [days, setDays] = useState<DayListItem[]>(initialDays);
+  const [selectedDate, setSelectedDate] = useState<string | null>(initialSelectedDate);
+  const [selectedDay, setSelectedDay] = useState<DayDetail | null>(initialSelectedDay);
+  const [openBatch, setOpenBatch] = useState<OpenDaysBatch | null>(initialOpenBatch);
   const [filter, setFilter] = useState<DaysFilter>("OPEN");
   const [showTransactions, setShowTransactions] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoadingDays, setIsLoadingDays] = useState(true);
+  const [isLoadingDays, setIsLoadingDays] = useState(initialDays.length === 0);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [pendingTransactionId, setPendingTransactionId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    void loadDays();
+    if (!initialDays.length) {
+      void loadDays();
+    }
+
+    if (!initialOpenBatch) {
+      void loadOpenBatch();
+    }
   }, []);
 
   useEffect(() => {
@@ -78,8 +120,12 @@ export function DaysDashboard() {
       return;
     }
 
+    if (selectedDay && selectedDay.date === selectedDate) {
+      return;
+    }
+
     void loadDayDetail(selectedDate);
-  }, [selectedDate]);
+  }, [selectedDate, selectedDay]);
 
   async function loadDays() {
     setIsLoadingDays(true);
@@ -88,6 +134,13 @@ export function DaysDashboard() {
     setDays(payload.data);
     setSelectedDate((current) => pickPreferredDate(payload.data, current));
     setIsLoadingDays(false);
+    return payload.data;
+  }
+
+  async function loadOpenBatch() {
+    const response = await fetch("/api/batches/open", { cache: "no-store" });
+    const payload = (await response.json()) as { data: OpenDaysBatch };
+    setOpenBatch(payload.data);
   }
 
   async function loadDayDetail(date: string) {
@@ -106,6 +159,32 @@ export function DaysDashboard() {
     setIsLoadingDetail(false);
   }
 
+  async function toggleExcluded(transactionId: string, exclude: boolean) {
+    if (!selectedDate) {
+      return;
+    }
+
+    setPendingTransactionId(transactionId);
+    setError(null);
+
+    const response = await fetch(`/api/transactions/${transactionId}/exclude`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ exclude }),
+    });
+
+    if (!response.ok) {
+      setError("Nie udalo sie zaktualizowac pozycji dnia.");
+      setPendingTransactionId(null);
+      return;
+    }
+
+    await Promise.all([loadDays(), loadDayDetail(selectedDate), loadOpenBatch()]);
+    setPendingTransactionId(null);
+  }
+
   function settleSelectedDay() {
     if (!selectedDate) {
       return;
@@ -122,9 +201,7 @@ export function DaysDashboard() {
         return;
       }
 
-      const refreshedResponse = await fetch("/api/days", { cache: "no-store" });
-      const refreshedPayload = (await refreshedResponse.json()) as { data: DayListItem[] };
-      const refreshedDays = refreshedPayload.data;
+      const [refreshedDays] = await Promise.all([loadDays(), loadOpenBatch()]);
       setDays(refreshedDays);
 
       const nextOpenDay = refreshedDays.find((day) => day.status === "OPEN");
@@ -132,6 +209,76 @@ export function DaysDashboard() {
       setSelectedDate(nextDate);
 
       await loadDayDetail(nextDate);
+    });
+  }
+
+  function reopenSelectedDay() {
+    if (!selectedDate) {
+      return;
+    }
+
+    setError(null);
+    startTransition(async () => {
+      const response = await fetch(`/api/days/${selectedDate}/reopen`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        setError("Nie udalo sie otworzyc dnia.");
+        return;
+      }
+
+      await Promise.all([loadDays(), loadDayDetail(selectedDate), loadOpenBatch()]);
+    });
+  }
+
+  function toggleDayInBatch(includeInBatch: boolean) {
+    if (!selectedDate) {
+      return;
+    }
+
+    setError(null);
+    startTransition(async () => {
+      const response = await fetch(`/api/days/${selectedDate}/batch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ includeInBatch }),
+      });
+
+      if (!response.ok) {
+        setError("Nie udalo sie zmienic udzialu dnia w paczce.");
+        return;
+      }
+
+      await Promise.all([loadDays(), loadDayDetail(selectedDate), loadOpenBatch()]);
+    });
+  }
+
+  function settleOpenBatch() {
+    setError(null);
+    startTransition(async () => {
+      const response = await fetch("/api/batches/open/settle", {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        setError("Nie udalo sie zamknac calej paczki.");
+        return;
+      }
+
+      const refreshedDays = await loadDays();
+      await loadOpenBatch();
+
+      const nextOpenDay = refreshedDays.find((day) => day.status === "OPEN" && day.includeInBatch)?.date ?? null;
+      setSelectedDate(nextOpenDay);
+
+      if (nextOpenDay) {
+        await loadDayDetail(nextOpenDay);
+      } else {
+        setSelectedDay(null);
+      }
     });
   }
 
@@ -150,21 +297,6 @@ export function DaysDashboard() {
 
   return (
     <section className={styles.wrapper}>
-      <section className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Dashboard</p>
-          <h2>Dni i paczki przelewow</h2>
-          <p className={styles.copy}>
-            Ten widok czyta dane prosto z `/api/days`. Po imporcie wyciagu od razu widzisz kwoty dnia, transakcje i
-            paczke przelewow do wykonania.
-          </p>
-        </div>
-        <div className={styles.heroMeta}>
-          <span>API: `/api/days`, `/api/days/:date`, `/api/days/:date/settle`</span>
-          <span>Codzienny rytm: import, podzial, zamkniecie dnia</span>
-        </div>
-      </section>
-
       <section className={styles.metrics}>
         <article className={styles.metricCard}>
           <p className={styles.metricLabel}>Otwarte dni</p>
@@ -178,6 +310,66 @@ export function DaysDashboard() {
           <p className={styles.metricLabel}>Rozliczone dni</p>
           <h3>{isLoadingDays ? "..." : settledDaysCount}</h3>
         </article>
+      </section>
+
+      <section className={styles.panel}>
+        <p className={styles.eyebrow}>Paczka zbiorcza</p>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3>Otwarte dni do wykonania teraz</h3>
+            <p className={styles.copy}>
+              Jedna paczka dla wszystkich otwartych dni, z mozliwoscia wykluczenia pojedynczego dnia z biezacego zakresu.
+            </p>
+          </div>
+          <span className={styles.status}>{openBatch?.dayCount ?? 0} dni</span>
+        </div>
+
+        <div className={styles.summaryGrid}>
+          <div className={styles.summaryTile}>
+            <p>Lacznie do przelania</p>
+            <strong className={styles.amountInline}>{pln.format(openBatch?.totalAmount ?? 0)}</strong>
+          </div>
+          <div className={styles.summaryTile}>
+            <p>Zakres paczki</p>
+            <strong>
+              {openBatch?.dateFrom
+                ? openBatch.dateFrom === openBatch.dateTo
+                  ? fullDate.format(new Date(openBatch.dateFrom))
+                  : `${fullDate.format(new Date(openBatch.dateFrom))} - ${fullDate.format(new Date(openBatch.dateTo ?? openBatch.dateFrom))}`
+                : "Brak otwartych dni"}
+            </strong>
+          </div>
+        </div>
+
+        <div className={styles.buttonRow}>
+          <button
+            className={styles.primaryButton}
+            type="button"
+            onClick={settleOpenBatch}
+            disabled={isPending || !openBatch?.items.length}
+          >
+            {isPending ? "Zamykanie paczki..." : "Zamknij cala paczke"}
+          </button>
+        </div>
+
+        <div className={styles.checklist}>
+          {openBatch?.items.length ? (
+            openBatch.items.map((item) => (
+              <div key={item.key} className={styles.checklistItem}>
+                <div>
+                  <strong>Przelej na {item.targetLabel}</strong>
+                  <p>
+                    {item.categoryName} - {item.targetAccountNumber}
+                  </p>
+                  <p className={styles.helperText}>Tytul: {item.transferTitle}</p>
+                </div>
+                <strong className={styles.amountInline}>{pln.format(item.amount)}</strong>
+              </div>
+            ))
+          ) : (
+            <div className={styles.empty}>Brak otwartych dni uwzglednionych w paczce zbiorczej.</div>
+          )}
+        </div>
       </section>
 
       <section className={styles.grid}>
@@ -226,7 +418,14 @@ export function DaysDashboard() {
                 >
                   <div>
                     <strong>{fullDate.format(new Date(day.date))}</strong>
-                    <p>{day.paymentBatch ? `${day.paymentBatch.items.length} przelewow w paczce` : "Brak paczki"}</p>
+                    <p>
+                      {day.paymentBatch ? `${day.paymentBatch.items.length} przelewow w paczce` : "Brak paczki"}
+                      {day.status === "OPEN"
+                        ? day.includeInBatch
+                          ? " · w paczce zbiorczej"
+                          : " · poza paczka zbiorcza"
+                        : ""}
+                    </p>
                   </div>
                   <div>
                     <strong>{pln.format(day.totalIncome)}</strong>
@@ -262,10 +461,10 @@ export function DaysDashboard() {
                       : "To laczna kwota, ktora powinna trafic dzisiaj na subkonta."}
                   </p>
                 </div>
-                <span className={`${styles.status} ${visibleSelectedDay.status === "SETTLED" ? styles.statusDone : ""}`}>
-                  {visibleSelectedDay.status === "SETTLED" ? "Rozliczony" : "Do rozliczenia"}
-                </span>
-              </div>
+                  <span className={`${styles.status} ${visibleSelectedDay.status === "SETTLED" ? styles.statusDone : ""}`}>
+                    {visibleSelectedDay.status === "SETTLED" ? "Rozliczony" : "Do rozliczenia"}
+                  </span>
+                </div>
 
               <div className={styles.summaryGrid}>
                 <div className={styles.summaryTile}>
@@ -279,14 +478,25 @@ export function DaysDashboard() {
               </div>
 
               <div className={styles.buttonRow}>
-                <button
-                  className={styles.primaryButton}
-                  type="button"
-                  onClick={settleSelectedDay}
-                  disabled={isPending || visibleSelectedDay.status === "SETTLED"}
-                >
-                  {isPending ? "Zamykanie..." : "Zamknij dzien"}
-                </button>
+                {visibleSelectedDay.status === "SETTLED" ? (
+                  <button className={styles.ghostButton} type="button" onClick={reopenSelectedDay} disabled={isPending}>
+                    {isPending ? "Otwieranie..." : "Otworz dzien"}
+                  </button>
+                ) : (
+                  <>
+                    <button className={styles.primaryButton} type="button" onClick={settleSelectedDay} disabled={isPending}>
+                      {isPending ? "Zamykanie..." : "Zamknij dzien"}
+                    </button>
+                    <button
+                      className={styles.ghostButton}
+                      type="button"
+                      onClick={() => toggleDayInBatch(!visibleSelectedDay.includeInBatch)}
+                      disabled={isPending}
+                    >
+                      {visibleSelectedDay.includeInBatch ? "Wylacz z paczki" : "Przywroc do paczki"}
+                    </button>
+                  </>
+                )}
               </div>
 
               {error ? <p className={styles.error}>{error}</p> : null}
@@ -302,6 +512,7 @@ export function DaysDashboard() {
                         <p>
                           {item.categoryName} - {item.targetAccountNumber}
                         </p>
+                        <p className={styles.helperText}>Tytul: {item.transferTitle}</p>
                       </div>
                       <strong className={styles.amountInline}>{pln.format(item.amount)}</strong>
                     </div>
@@ -340,12 +551,32 @@ export function DaysDashboard() {
                 <div className={styles.empty}>Ladowanie transakcji dnia...</div>
               ) : visibleSelectedDay?.transactions?.length ? (
                 visibleSelectedDay.transactions.map((transaction) => (
-                  <div key={transaction.id} className={styles.item}>
+                  <div
+                    key={transaction.id}
+                    className={`${styles.item} ${transaction.isExcluded ? styles.itemExcluded : ""}`}
+                  >
                     <div>
                       <strong>{transaction.description}</strong>
-                      <p>{transaction.counterparty || "Brak kontrahenta"}</p>
+                      <p>
+                        {transaction.counterparty || "Brak kontrahenta"}
+                        {transaction.isExcluded ? " · Wykluczona z rozliczenia" : ""}
+                      </p>
                     </div>
-                    <strong>{pln.format(transaction.amount)}</strong>
+                    <div className={styles.transactionActions}>
+                      <strong>{pln.format(transaction.amount)}</strong>
+                      <button
+                        type="button"
+                        className={styles.inlineAction}
+                        onClick={() => void toggleExcluded(transaction.id, !transaction.isExcluded)}
+                        disabled={pendingTransactionId === transaction.id}
+                      >
+                        {pendingTransactionId === transaction.id
+                          ? "Zapisywanie..."
+                          : transaction.isExcluded
+                            ? "Przywroc"
+                            : "Wyklucz"}
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (

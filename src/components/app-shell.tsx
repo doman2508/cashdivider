@@ -45,6 +45,7 @@ export function AppShell({ currentPath, title, description, children }: AppShell
             <Link
               key={item.href}
               href={item.href}
+              prefetch
               className={`${styles.navLink} ${isActivePath(item.href) ? styles.navLinkActive : ""}`}
             >
               {item.label}

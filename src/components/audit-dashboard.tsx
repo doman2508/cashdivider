@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { fullDate, pln } from "@/src/lib/format";
 import styles from "./audit-dashboard.module.css";
 
-type ImportEntry = {
+export type ImportEntry = {
   id: string;
   sourceType: "ING_CSV" | "MANUAL";
   sourceName: string;
@@ -14,7 +14,7 @@ type ImportEntry = {
   skippedCount: number;
 };
 
-type BatchEntry = {
+export type BatchEntry = {
   id: string;
   date: string;
   status: "GENERATED" | "COMPLETED";
@@ -28,16 +28,25 @@ type BatchEntry = {
 type AuditDashboardProps = {
   refreshKey?: number;
   lastImportedDates?: string[];
+  initialImports?: ImportEntry[];
+  initialBatches?: BatchEntry[];
 };
 
-export function AuditDashboard({ refreshKey = 0, lastImportedDates = [] }: AuditDashboardProps) {
-  const [imports, setImports] = useState<ImportEntry[]>([]);
-  const [batches, setBatches] = useState<BatchEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function AuditDashboard({
+  refreshKey = 0,
+  lastImportedDates = [],
+  initialImports = [],
+  initialBatches = [],
+}: AuditDashboardProps) {
+  const [imports, setImports] = useState<ImportEntry[]>(initialImports);
+  const [batches, setBatches] = useState<BatchEntry[]>(initialBatches);
+  const [isLoading, setIsLoading] = useState(initialImports.length === 0 && initialBatches.length === 0);
 
   useEffect(() => {
-    void loadAuditData();
-  }, [refreshKey]);
+    if (refreshKey > 0 || (initialImports.length === 0 && initialBatches.length === 0)) {
+      void loadAuditData();
+    }
+  }, [refreshKey, initialImports.length, initialBatches.length]);
 
   async function loadAuditData() {
     setIsLoading(true);

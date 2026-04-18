@@ -27,8 +27,12 @@ const emptyForm: FormState = {
   targetAccountNumber: "",
 };
 
-export function RulesManager() {
-  const [rules, setRules] = useState<Rule[]>([]);
+type RulesManagerProps = {
+  initialRules?: Rule[];
+};
+
+export function RulesManager({ initialRules = [] }: RulesManagerProps) {
+  const [rules, setRules] = useState<Rule[]>(initialRules);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,8 +40,10 @@ export function RulesManager() {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    void loadRules();
-  }, []);
+    if (!initialRules.length) {
+      void loadRules();
+    }
+  }, [initialRules.length]);
 
   async function loadRules() {
     const response = await fetch("/api/rules", { cache: "no-store" });
@@ -83,8 +89,21 @@ export function RulesManager() {
         return;
       }
 
-      await loadRules();
-      setInfo(editingId ? "Regula zostala zaktualizowana." : "Regula zostala dodana.");
+      const body = (await response.json()) as { data: Rule };
+      setRules((current) => {
+        if (editingId) {
+          return current
+            .map((rule) => (rule.id === editingId ? body.data : rule))
+            .sort((left, right) => left.position - right.position);
+        }
+
+        return [...current, body.data].sort((left, right) => left.position - right.position);
+      });
+      setInfo(
+        editingId
+          ? "Regula zostala zaktualizowana. Dni i paczki przeliczaja sie w tle."
+          : "Regula zostala dodana. Dni i paczki przeliczaja sie w tle.",
+      );
       resetForm();
     });
   }
@@ -115,11 +134,11 @@ export function RulesManager() {
         return;
       }
 
-      await loadRules();
+      setRules((current) => current.filter((rule) => rule.id !== ruleId));
       if (editingId === ruleId) {
         resetForm();
       }
-      setInfo("Regula zostala usunieta.");
+      setInfo("Regula zostala usunieta. Dni i paczki przeliczaja sie w tle.");
     });
   }
 

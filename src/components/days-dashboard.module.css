@@ -1,332 +1,363 @@
 .wrapper {
-  display: grid;
-  gap: 24px;
-}
-
-.hero {
   display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  align-items: flex-start;
-  padding: 8px 4px 0;
+  flex-direction: column;
+  gap: 0.55rem;
 }
 
-.heroMeta {
-  display: grid;
-  gap: 8px;
-  justify-items: end;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-.eyebrow,
-.metricLabel {
-  margin: 0 0 10px;
-  font-size: 0.76rem;
+.eyebrow {
+  margin: 0 0 0.3rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted);
+  letter-spacing: 0.16em;
+  color: var(--text-soft);
+  font-weight: 800;
 }
 
 .copy {
-  color: var(--muted);
-  max-width: 62ch;
-}
-
-.metrics,
-.grid {
-  display: grid;
-  gap: 24px;
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .metrics {
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
 }
 
-.grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.metricCard,
+.panel {
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.9) 100%);
+  box-shadow: var(--shadow-soft);
+  align-self: start;
 }
 
-.panel,
 .metricCard {
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  padding: 24px;
+  padding: 0.52rem 0.62rem;
 }
 
-.metricCard h3,
-.panel h3,
-.hero h2 {
-  margin: 0;
-  letter-spacing: -0.04em;
+.metricLabel {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-soft);
+  font-weight: 800;
 }
 
 .metricCard h3 {
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  margin: 0;
+  font-size: clamp(1.2rem, 1.6vw, 1.45rem);
+  letter-spacing: -0.05em;
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.stack,
-.daysList {
+.panel {
   display: grid;
-  gap: 14px;
-}
-
-.filterRow {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 16px 0 18px;
-}
-
-.dayButton,
-.item {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: var(--surface-tint);
-  border: 1px solid var(--line);
-}
-
-.dayButton {
-  width: 100%;
-  cursor: pointer;
-  text-align: left;
-}
-
-.dayButtonActive {
-  border-color: rgba(31, 92, 66, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(31, 92, 66, 0.12);
-  background: linear-gradient(160deg, rgba(31, 92, 66, 0.08), rgba(255, 253, 249, 0.96));
-}
-
-.item p,
-.dayButton p {
-  margin: 4px 0 0;
-  color: var(--muted);
-}
-
-.status {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: var(--warning-soft);
-  color: var(--warning);
-}
-
-.statusDone {
-  background: rgba(45, 106, 79, 0.14);
-  color: var(--success);
-}
-
-.buttonRow {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.58rem;
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 .sectionHeader {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  align-items: center;
+  gap: 0.8rem;
+  align-items: flex-start;
 }
 
-.actionCard {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px;
-  border-radius: 20px;
-  background: linear-gradient(160deg, rgba(31, 92, 66, 0.1), rgba(255, 253, 249, 0.98));
-  border: 1px solid rgba(31, 92, 66, 0.14);
-  margin-bottom: 16px;
-}
-
-.actionLabel {
-  margin: 0 0 8px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.72rem;
-}
-
-.actionCard h4 {
+.sectionHeader h3 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3rem);
-  letter-spacing: -0.05em;
-}
-
-.amountDisplay,
-.amountInline {
-  font-variant-numeric: tabular-nums lining-nums;
-}
-
-.amountInline {
+  font-size: 0.86rem;
   letter-spacing: -0.03em;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.45rem;
+  padding: 0.14rem 0.44rem;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 0.66rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.statusDone {
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 0.45rem;
 }
 
 .summaryTile {
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: var(--surface-tint);
-  border: 1px solid var(--line);
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  border: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.78);
 }
 
 .summaryTile p {
-  margin: 0 0 8px;
-  color: var(--muted);
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.72rem;
 }
 
 .summaryTile strong {
-  font-size: 1.15rem;
+  font-size: 0.84rem;
+  letter-spacing: -0.02em;
 }
 
-.checklist {
-  display: grid;
-  gap: 14px;
+.amountInline,
+.amountDisplay {
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
-.checklistItem {
+.amountDisplay {
+  margin: 0;
+  font-size: clamp(1.45rem, 2vw, 1.8rem);
+  letter-spacing: -0.07em;
+}
+
+.buttonRow {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: center;
-  padding: 18px;
-  border-radius: 18px;
-  background: var(--surface-strong);
-  border: 1px solid var(--line);
-  position: relative;
-  overflow: hidden;
-}
-
-.checklistItem::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
-}
-
-.checkIndex {
-  margin: 0 0 6px;
-  font-size: 0.78rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
 .primaryButton,
 .ghostButton,
-.filterButton {
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+.filterButton,
+.inlineAction,
+.dayButton {
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.primaryButton,
+.ghostButton,
+.filterButton,
+.inlineAction {
+  border-radius: 12px;
+  font-weight: 800;
 }
 
 .primaryButton {
-  padding: 14px 18px;
-  background: linear-gradient(160deg, var(--accent), var(--accent-strong));
+  padding: 0.48rem 0.72rem;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
   color: #fff;
-  font-weight: 700;
-  box-shadow: 0 12px 24px rgba(23, 72, 51, 0.18);
+  box-shadow: 0 10px 22px rgba(11, 67, 58, 0.18);
 }
 
 .ghostButton {
-  padding: 12px 16px;
-  background: rgba(255, 253, 249, 0.86);
+  padding: 0.44rem 0.66rem;
+  background: rgba(255, 255, 255, 0.72);
   color: var(--text);
-  border: 1px solid var(--line);
+  border: 1px solid var(--surface-border);
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
 .filterButton {
-  padding: 10px 14px;
-  background: rgba(255, 253, 249, 0.86);
-  color: var(--text);
-  border: 1px solid var(--line);
+  min-height: 1.55rem;
+  padding: 0.18rem 0.48rem;
+  border: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-muted);
+  font-size: 0.7rem;
 }
 
 .filterButtonActive {
-  border-color: rgba(31, 92, 66, 0.24);
-  background: linear-gradient(160deg, rgba(31, 92, 66, 0.09), rgba(255, 253, 249, 0.96));
+  border-color: rgba(15, 91, 79, 0.16);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
 }
 
+.checklist,
+.daysList,
+.stack {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.checklistItem,
+.dayButton,
+.item,
+.actionCard {
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.checklistItem,
+.item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.55rem 0.62rem;
+}
+
+.checklistItem p,
+.item p {
+  margin: 0.18rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.checkIndex {
+  margin: 0 0 0.2rem !important;
+  font-size: 0.64rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-soft) !important;
+  font-weight: 800;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.05fr);
+  gap: 0.55rem;
+  align-items: start;
+}
+
+.dayButton {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.52rem 0.6rem;
+  text-align: left;
+}
+
+.dayButton:hover,
 .primaryButton:hover,
 .ghostButton:hover,
 .filterButton:hover,
-.dayButton:hover {
+.inlineAction:hover {
   transform: translateY(-1px);
 }
 
+.dayButtonActive {
+  border-color: rgba(15, 91, 79, 0.22);
+  background: rgba(15, 91, 79, 0.06);
+}
+
+.dayButton strong,
+.item strong,
+.checklistItem strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.actionCard {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.65rem;
+  background: linear-gradient(135deg, rgba(15, 91, 79, 0.06) 0%, rgba(255, 255, 255, 0.9) 100%);
+}
+
+.actionLabel {
+  margin: 0 0 0.35rem;
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-soft);
+  font-weight: 800;
+}
+
 .empty {
-  padding: 18px;
-  border-radius: 16px;
-  background: var(--bg-strong);
-  border: 1px solid var(--line);
-  color: var(--muted);
+  padding: 0.62rem;
+  border-radius: 12px;
+  border: 1px dashed var(--surface-border-strong);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.daysList {
+  align-content: start;
+  max-height: 22rem;
+  overflow: auto;
 }
 
 .error {
-  color: #b42318;
+  margin: 0;
+  color: var(--danger-text);
+  font-size: 0.8rem;
+}
+
+.transactionActions {
+  display: grid;
+  justify-items: end;
+  gap: 0.45rem;
+}
+
+.inlineAction {
+  min-height: 1.7rem;
+  padding: 0.24rem 0.62rem;
+  border: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.itemExcluded {
+  background: rgba(168, 63, 63, 0.05);
+  border-color: rgba(168, 63, 63, 0.12);
 }
 
 .helperText {
-  color: var(--muted);
-  margin-top: 10px;
+  color: var(--text-soft) !important;
 }
 
-@media (max-width: 1120px) {
-  .metrics,
-  .grid,
-  .summaryGrid {
+@media (max-width: 1180px) {
+  .grid {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 720px) {
-  .panel,
-  .metricCard {
-    border-radius: 20px;
-  }
-
-  .filterRow,
-  .buttonRow {
-    width: 100%;
-  }
-
-  .primaryButton,
-  .filterButton {
-    width: 100%;
-    justify-content: center;
+@media (max-width: 900px) {
+  .metrics,
+  .summaryGrid {
+    grid-template-columns: 1fr;
   }
 
   .hero,
   .sectionHeader,
   .actionCard,
-  .dayButton,
+  .checklistItem,
   .item,
-  .checklistItem {
+  .dayButton {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .heroMeta {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .transactionActions {
     justify-items: start;
   }
 }

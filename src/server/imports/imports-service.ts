@@ -159,49 +159,79 @@ function parseManualTransactions(rawInput: string): ParsedTransaction[] {
   return parsed as ParsedTransaction[];
 }
 
-async function rebuildFinancialStateForDates(userId: string, affectedDates: string[]) {
-  const uniqueDates = [...new Set(affectedDates)];
+export async function rebuildFinancialStateForDates(userId: string, affectedDates: string[]) {
+  const uniqueDates = [...new Set(affectedDates)].sort();
 
-  for (const dateString of uniqueDates) {
-    const targetDate = toUtcDateOnly(dateString);
-    const transactions = await db.bankTransaction.findMany({
+  if (!uniqueDates.length) {
+    return;
+  }
+
+  const targetDates = uniqueDates.map(toUtcDateOnly);
+  const [transactions, rules, existingDays] = await Promise.all([
+    db.bankTransaction.findMany({
       where: {
         userId,
-        bookingDate: targetDate,
+        bookingDate: { in: targetDates },
+        isExcluded: false,
       },
-      orderBy: [{ amount: "desc" }, { createdAt: "asc" }],
-    });
-
-    const totalIncome = transactions.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
-
-    const rules = await db.allocationRule.findMany({
+      orderBy: [{ bookingDate: "asc" }, { amount: "desc" }, { createdAt: "asc" }],
+    }),
+    db.allocationRule.findMany({
       where: { userId, isActive: true },
       orderBy: [{ position: "asc" }, { createdAt: "asc" }],
-    });
-
-    const existingDay = await db.dailySummary.findUnique({
+    }),
+    db.dailySummary.findMany({
       where: {
-        userId_date: {
-          userId,
-          date: targetDate,
-        },
+        userId,
+        date: { in: targetDates },
       },
       include: {
         paymentBatch: {
-          include: {
-            items: true,
+          select: {
+            id: true,
           },
         },
       },
-    });
+    }),
+  ]);
 
-    if (!transactions.length) {
-      if (existingDay) {
-        await db.dailySummary.delete({ where: { id: existingDay.id } });
-      }
+  const transactionsByDate = new Map<string, typeof transactions>();
+  for (const transaction of transactions) {
+    const dateKey = transaction.bookingDate.toISOString().slice(0, 10);
+    const bucket = transactionsByDate.get(dateKey);
+    if (bucket) {
+      bucket.push(transaction);
+    } else {
+      transactionsByDate.set(dateKey, [transaction]);
+    }
+  }
+
+  const existingDaysByDate = new Map(
+    existingDays.map((day) => [day.date.toISOString().slice(0, 10), day] as const),
+  );
+
+  const emptyDayIds = uniqueDates
+    .filter((dateString) => !(transactionsByDate.get(dateString)?.length ?? 0))
+    .map((dateString) => existingDaysByDate.get(dateString)?.id)
+    .filter((value): value is string => Boolean(value));
+
+  if (emptyDayIds.length) {
+    await db.dailySummary.deleteMany({
+      where: {
+        id: {
+          in: emptyDayIds,
+        },
+      },
+    });
+  }
+
+  for (const dateString of uniqueDates) {
+    const dayTransactions = transactionsByDate.get(dateString) ?? [];
+    if (!dayTransactions.length) {
       continue;
     }
 
+    const totalIncome = dayTransactions.reduce((sum, transaction) => sum + Number(transaction.amount), 0);
     const allocations = rules.map((rule) => {
       const amount = Math.round((totalIncome * Number(rule.percentage)) * 100 / 10000);
       return {
@@ -216,6 +246,7 @@ async function rebuildFinancialStateForDates(userId: string, affectedDates: stri
 
     const allocatedTotal = allocations.reduce((sum, item) => sum + item.amount, 0);
     const leftoverAmount = Number((totalIncome - allocatedTotal).toFixed(2));
+    const existingDay = existingDaysByDate.get(dateString);
 
     const day = existingDay
       ? await db.dailySummary.update({
@@ -227,13 +258,14 @@ async function rebuildFinancialStateForDates(userId: string, affectedDates: stri
       : await db.dailySummary.create({
           data: {
             userId,
-            date: targetDate,
+            date: toUtcDateOnly(dateString),
             totalIncome: new Prisma.Decimal(totalIncome.toFixed(2)),
             status: DailySummaryStatus.OPEN,
+            includeInBatch: true,
           },
         });
 
-    if (existingDay?.paymentBatch) {
+    if (existingDay?.paymentBatch?.id) {
       await db.paymentBatchItem.deleteMany({
         where: { batchId: existingDay.paymentBatch.id },
       });

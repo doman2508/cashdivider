@@ -29,15 +29,22 @@ function getDefaultMonth() {
   return `${year}-${month}`;
 }
 
-export function MonthSummary() {
-  const [selectedMonth, setSelectedMonth] = useState(getDefaultMonth);
-  const [summary, setSummary] = useState<MonthSummaryData | null>(null);
+type MonthSummaryProps = {
+  initialMonth?: string;
+  initialSummary?: MonthSummaryData | null;
+};
+
+export function MonthSummary({ initialMonth, initialSummary = null }: MonthSummaryProps) {
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth ?? getDefaultMonth);
+  const [summary, setSummary] = useState<MonthSummaryData | null>(initialSummary);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    void loadSummary(selectedMonth);
-  }, [selectedMonth]);
+    if (selectedMonth !== initialMonth || !initialSummary) {
+      void loadSummary(selectedMonth);
+    }
+  }, [selectedMonth, initialMonth, initialSummary]);
 
   async function loadSummary(month: string) {
     setError(null);

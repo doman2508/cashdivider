@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import styles from "./open-banking-spike.module.css";
 
-type OpenBankingStatus = {
+export type OpenBankingStatus = {
   provider: string;
   environment: string;
   isConfigured: boolean;
@@ -23,12 +23,18 @@ type OpenBankingStatus = {
   };
 };
 
-export function OpenBankingSpike() {
-  const [status, setStatus] = useState<OpenBankingStatus | null>(null);
+type OpenBankingSpikeProps = {
+  initialStatus?: OpenBankingStatus | null;
+};
+
+export function OpenBankingSpike({ initialStatus = null }: OpenBankingSpikeProps) {
+  const [status, setStatus] = useState<OpenBankingStatus | null>(initialStatus);
 
   useEffect(() => {
-    void loadStatus();
-  }, []);
+    if (!initialStatus) {
+      void loadStatus();
+    }
+  }, [initialStatus]);
 
   async function loadStatus() {
     const response = await fetch("/api/open-banking/status", { cache: "no-store" });

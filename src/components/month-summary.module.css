@@ -1,48 +1,43 @@
 .wrapper {
   display: grid;
-  gap: 24px;
+  gap: 1rem;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
+  gap: 1rem;
   align-items: flex-start;
 }
 
 .eyebrow,
 .metricLabel {
-  margin: 0 0 10px;
-  font-size: 0.76rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted);
+  letter-spacing: 0.16em;
+  color: var(--text-soft);
+  font-weight: 800;
 }
 
 .copy {
-  color: var(--muted);
+  color: var(--text-muted);
   max-width: 62ch;
+  font-size: 0.92rem;
 }
 
 .monthPicker {
   display: grid;
-  gap: 8px;
+  gap: 0.4rem;
   min-width: 180px;
-  color: var(--muted);
-}
-
-.monthPicker input {
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: var(--surface-tint);
-  color: var(--text);
+  color: var(--text-muted);
+  font-size: 0.88rem;
 }
 
 .metrics,
 .grid {
   display: grid;
-  gap: 24px;
+  gap: 0.9rem;
 }
 
 .metrics {
@@ -55,21 +50,21 @@
 
 .metricCard,
 .panel {
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  padding: 24px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.9) 100%);
+  box-shadow: var(--shadow-soft);
+  padding: 1rem;
 }
 
 .metricCard h3,
 .panel h3 {
   margin: 0;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.05em;
 }
 
 .metricCard h3 {
-  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-size: clamp(1.55rem, 2.6vw, 2.1rem);
 }
 
 .amountDisplay,
@@ -83,42 +78,43 @@
 
 .stack {
   display: grid;
-  gap: 14px;
+  gap: 0.7rem;
 }
 
 .item {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 0.85rem;
   align-items: center;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: var(--surface-tint);
-  border: 1px solid var(--line);
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--surface-border);
 }
 
 .item p,
 .amounts span {
-  margin: 4px 0 0;
-  color: var(--muted);
+  margin: 0.18rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
 }
 
 .amounts {
   display: grid;
-  gap: 4px;
+  gap: 0.2rem;
   justify-items: end;
 }
 
 .empty,
 .error {
-  padding: 16px 18px;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: var(--surface-tint);
+  padding: 0.9rem 0.95rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--surface-border);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .error {
-  color: #9f2d20;
+  color: var(--danger-text);
 }
 
 @media (max-width: 1120px) {

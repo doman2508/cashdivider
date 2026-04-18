@@ -61,6 +61,8 @@ model BankTransaction {
   description  String
   counterparty String?
   transactionKey String
+  isExcluded   Boolean  @default(false)
+  excludedAt   DateTime?
   createdAt    DateTime @default(now())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   import       Import?  @relation(fields: [importId], references: [id], onDelete: SetNull)
@@ -75,6 +77,7 @@ model DailySummary {
   date         DateTime
   totalIncome  Decimal           @db.Decimal(12, 2)
   status       DailySummaryStatus @default(OPEN)
+  includeInBatch Boolean         @default(true)
   settledAt    DateTime?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt

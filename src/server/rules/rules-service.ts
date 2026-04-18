@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/src/server/db";
 import { ensureDemoUser } from "@/src/server/demo-user";
+import { rebuildFinancialStateForDates } from "@/src/server/imports/imports-service";
 import type { RuleInput } from "@/src/server/rules/rule-schema";
 
 function serializeRule(rule: {
@@ -33,6 +34,28 @@ export async function listRules() {
   return rules.map(serializeRule);
 }
 
+async function rebuildAllUserDays(userId: string) {
+  const transactionDates = await db.bankTransaction.findMany({
+    where: { userId },
+    select: { bookingDate: true },
+    distinct: ["bookingDate"],
+    orderBy: { bookingDate: "desc" },
+  });
+
+  await rebuildFinancialStateForDates(
+    userId,
+    transactionDates.map((entry) => entry.bookingDate.toISOString().slice(0, 10)),
+  );
+}
+
+function rebuildAllUserDaysInBackground(userId: string) {
+  setTimeout(() => {
+    void rebuildAllUserDays(userId).catch((error) => {
+      console.error("Rules rebuild failed", error);
+    });
+  }, 0);
+}
+
 export async function createRule(input: RuleInput) {
   const user = await ensureDemoUser();
   const percentage = new Prisma.Decimal(input.percentage);
@@ -61,6 +84,7 @@ export async function createRule(input: RuleInput) {
     },
   });
 
+  rebuildAllUserDaysInBackground(user.id);
   return serializeRule(rule);
 }
 
@@ -98,6 +122,7 @@ export async function updateRule(ruleId: string, input: RuleInput) {
     },
   });
 
+  rebuildAllUserDaysInBackground(user.id);
   return serializeRule(rule);
 }
 
@@ -115,4 +140,6 @@ export async function deleteRule(ruleId: string) {
   await db.allocationRule.delete({
     where: { id: ruleId },
   });
+
+  rebuildAllUserDaysInBackground(user.id);
 }

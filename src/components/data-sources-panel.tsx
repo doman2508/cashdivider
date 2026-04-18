@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import styles from "./data-sources-panel.module.css";
 
-type DataSourcesPayload = {
+export type DataSourcesPayload = {
   recommendedProvider: {
     id: string;
     label: string;
@@ -39,12 +39,18 @@ type DataSourcesPayload = {
   };
 };
 
-export function DataSourcesPanel() {
-  const [data, setData] = useState<DataSourcesPayload | null>(null);
+type DataSourcesPanelProps = {
+  initialData?: DataSourcesPayload | null;
+};
+
+export function DataSourcesPanel({ initialData = null }: DataSourcesPanelProps) {
+  const [data, setData] = useState<DataSourcesPayload | null>(initialData);
 
   useEffect(() => {
-    void loadDataSources();
-  }, []);
+    if (!initialData) {
+      void loadDataSources();
+    }
+  }, [initialData]);
 
   async function loadDataSources() {
     const response = await fetch("/api/data-sources", { cache: "no-store" });

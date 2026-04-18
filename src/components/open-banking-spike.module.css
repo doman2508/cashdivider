@@ -1,87 +1,90 @@
 .panel {
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  padding: 24px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.9) 100%);
+  box-shadow: var(--shadow-soft);
+  padding: 0.85rem;
   display: grid;
-  gap: 16px;
+  gap: 0.7rem;
 }
 
 .eyebrow {
-  margin: 0 0 10px;
-  font-size: 0.76rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted);
+  letter-spacing: 0.16em;
+  color: var(--text-soft);
+  font-weight: 800;
 }
 
 .copy {
-  color: var(--muted);
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .statusCard {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 0.7rem;
   align-items: center;
-  padding: 18px;
-  border-radius: 16px;
-  background: var(--surface-tint);
-  border: 1px solid var(--line);
+  padding: 0.7rem 0.78rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--surface-border);
 }
 
 .statusCard p {
-  margin: 4px 0 0;
-  color: var(--muted);
+  margin: 0.16rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 7px 11px;
+  padding: 0.24rem 0.58rem;
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: var(--warning-soft);
-  color: var(--warning);
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .badgeReady {
-  background: rgba(45, 106, 79, 0.14);
-  color: var(--success);
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .badgePlanned {
-  background: var(--warning-soft);
-  color: var(--warning);
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .warning {
-  color: var(--warning);
+  color: var(--warning-text);
+  font-size: 0.82rem;
 }
 
 .success {
-  color: var(--success);
+  color: var(--success-text);
+  font-size: 0.82rem;
 }
 
 .primaryLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 14px 18px;
+  padding: 0.58rem 0.88rem;
   border-radius: 999px;
-  background: linear-gradient(160deg, var(--accent), var(--accent-strong));
+  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
   color: #fff;
-  font-weight: 700;
-  box-shadow: 0 12px 24px rgba(23, 72, 51, 0.18);
+  font-weight: 800;
+  box-shadow: 0 10px 22px rgba(11, 67, 58, 0.18);
+  font-size: 0.84rem;
 }
 
 @media (max-width: 720px) {
-  .panel {
-    border-radius: 20px;
-  }
-
   .statusCard {
     flex-direction: column;
     align-items: flex-start;

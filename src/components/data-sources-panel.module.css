@@ -1,64 +1,67 @@
 .wrapper {
   display: grid;
-  gap: 24px;
+  gap: 0.8rem;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+  gap: 0.8rem;
 }
 
 .panel,
 .panelPrimary {
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-  padding: 24px;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.9) 100%);
+  box-shadow: var(--shadow-soft);
+  padding: 0.85rem;
 }
 
 .panelPrimary {
-  background: linear-gradient(160deg, rgba(31, 92, 66, 0.1), rgba(255, 253, 249, 0.98));
-  border-color: rgba(31, 92, 66, 0.14);
+  background: linear-gradient(135deg, rgba(15, 91, 79, 0.08), rgba(255, 255, 255, 0.94));
+  border-color: rgba(15, 91, 79, 0.12);
 }
 
 .eyebrow {
-  margin: 0 0 10px;
-  font-size: 0.76rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted);
+  letter-spacing: 0.16em;
+  color: var(--text-soft);
+  font-weight: 800;
 }
 
 .copy,
 .helper {
-  color: var(--muted);
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .badgeRow {
-  margin: 18px 0 16px;
+  margin: 0.5rem 0 0.4rem;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 7px 11px;
+  padding: 0.24rem 0.58rem;
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  background: var(--warning-soft);
-  color: var(--warning);
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .badgeReady {
-  background: rgba(45, 106, 79, 0.14);
-  color: var(--success);
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .badgePlanned {
-  background: var(--warning-soft);
-  color: var(--warning);
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .badgeRecommended {
@@ -69,29 +72,30 @@
 .requirements,
 .stack {
   display: grid;
-  gap: 14px;
+  gap: 0.55rem;
 }
 
 .requirements {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-bottom: 16px;
+  margin-bottom: 0.45rem;
 }
 
 .requirementItem,
 .item {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 0.7rem;
   align-items: center;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: var(--surface-tint);
-  border: 1px solid var(--line);
+  padding: 0.7rem 0.78rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid var(--surface-border);
 }
 
 .item p {
-  margin: 4px 0 0;
-  color: var(--muted);
+  margin: 0.16rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }
 
 @media (max-width: 1120px) {
@@ -102,11 +106,6 @@
 }
 
 @media (max-width: 720px) {
-  .panel,
-  .panelPrimary {
-    border-radius: 20px;
-  }
-
   .requirementItem,
   .item {
     flex-direction: column;
