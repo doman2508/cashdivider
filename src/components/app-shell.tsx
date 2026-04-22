@@ -62,9 +62,9 @@ export function AppShell({ currentPath, title, description, children }: AppShell
         <section className={styles.panel}>
           <p className={styles.eyebrow}>Tryb aplikacji</p>
           <ul className={styles.list}>
-            <li>{isProtected ? "Dostep chroniony haslem" : "Tryb otwarty bez blokady"}</li>
+            <li>{isProtected ? "Dostep chroniony logowaniem" : "Tryb otwarty bez blokady"}</li>
             <li>Jedna instancja dla jednego wlasciciela</li>
-            <li>Kolejny krok: pelniejsze logowanie</li>
+            <li>Dane sa przypisane do konta wlasciciela</li>
           </ul>
           {isProtected ? <LogoutButton /> : null}
         </section>

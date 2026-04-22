@@ -1,4 +1,4 @@
-import { DEMO_USER_EMAIL } from "@/src/server/demo-user";
+import { getOpenBankingUserEmail } from "@/src/server/demo-user";
 import { importParsedTransactions } from "@/src/server/imports/imports-service";
 import { getLatestImportConnectionStatus } from "./shared";
 import type { OpenBankingImportResult, OpenBankingProviderAdapter, OpenBankingProviderStatus } from "./types";
@@ -220,7 +220,7 @@ export class TrueLayerAdapter implements OpenBankingProviderAdapter {
     if (readEnvironment() === "sandbox") {
       url.searchParams.set("providers", "uk-cs-mock");
       url.searchParams.set("provider_id", preferredProviderId || "uk-cs-mock");
-      url.searchParams.set("user_email", DEMO_USER_EMAIL);
+      url.searchParams.set("user_email", getOpenBankingUserEmail());
     }
 
     return url.toString();

@@ -1,7 +1,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/src/components/login-form";
-import { getSessionCookieName, isAccessProtectionEnabled, isValidSessionToken } from "@/src/server/auth/session";
+import {
+  getConfiguredOwnerEmail,
+  getSessionCookieName,
+  isAccessProtectionEnabled,
+  isOwnerAuthEnabled,
+  isValidSessionToken,
+} from "@/src/server/auth/session";
 import styles from "./page.module.css";
 
 type LoginPageProps = {
@@ -31,10 +37,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className={styles.eyebrow}>CashDivider</p>
         <h1>Wejscie do aplikacji</h1>
         <p className={styles.copy}>
-          Ta wersja jest chroniona jednym haslem aplikacji. To prosty krok przejsciowy przed pelnym logowaniem
-          uzytkownikow.
+          {isOwnerAuthEnabled()
+            ? "Dostep do aplikacji ma tylko wlasciciel. Zaloguj sie emailem i haslem, aby przejsc do danych finansowych."
+            : "Ta wersja jest chroniona jednym haslem aplikacji. To prosty krok przejsciowy przed pelnym logowaniem uzytkownikow."}
         </p>
-        <LoginForm nextPath={nextPath} />
+        <LoginForm nextPath={nextPath} loginMode={isOwnerAuthEnabled() ? "owner" : "legacy"} ownerEmail={getConfiguredOwnerEmail()} />
       </section>
     </main>
   );
