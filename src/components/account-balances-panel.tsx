@@ -14,6 +14,8 @@ export type AccountBalance = {
   settledAmount: number;
   actualBalance: number;
   adjustmentTotal: number;
+  importedBalance: number | null;
+  importedBalanceAt: string | null;
 };
 
 type AccountBalancesPanelProps = {
@@ -84,8 +86,8 @@ export function AccountBalancesPanel({ initialAccounts = [] }: AccountBalancesPa
     <section className={styles.panel}>
       <div className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Stan subkont</p>
-          <h3>Rzeczywiste saldo po korektach</h3>
+          <p className={styles.eyebrow}>Stan kont</p>
+          <h3>Rzeczywiste saldo z banku i korekt</h3>
         </div>
       </div>
 
@@ -101,7 +103,11 @@ export function AccountBalancesPanel({ initialAccounts = [] }: AccountBalancesPa
 
               <div className={styles.amounts}>
                 <strong>{pln.format(account.actualBalance)}</strong>
-                <span>Powinno byc: {pln.format(account.settledAmount)}</span>
+                <span>
+                  {account.importedBalance != null
+                    ? `Saldo z banku: ${pln.format(account.importedBalance)}`
+                    : `Powinno byc: ${pln.format(account.settledAmount)}`}
+                </span>
                 <span>
                   {account.pendingAmount > 0 ? `Czeka: ${pln.format(account.pendingAmount)}` : "Bez zaleglosci"}
                 </span>

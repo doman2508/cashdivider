@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     if (error instanceof Error && error.message === "NO_TRANSACTIONS_FOUND") {
       return NextResponse.json(
-        { error: "NO_TRANSACTIONS_FOUND", message: "Nie znaleziono dodatnich uznan do importu." },
+        { error: "NO_TRANSACTIONS_FOUND", message: "Nie znaleziono transakcji do importu." },
         { status: 400 },
       );
     }

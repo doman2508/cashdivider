@@ -7,7 +7,22 @@ type ParsedTransaction = {
   amount: number;
   description: string;
   counterparty: string | null;
+  counterpartyAccountNumber?: string | null;
+  accountKey?: string | null;
+  accountLabel?: string | null;
+  accountNumber?: string | null;
+  accountDisplayName?: string | null;
+  bankName?: string | null;
+  details?: string | null;
+  rawTitle?: string | null;
+  externalTransactionId?: string | null;
+  balanceAfter?: number | null;
+  isInternalTransfer?: boolean;
   transactionKey: string;
+};
+
+type PreparsedTransaction = Omit<ParsedTransaction, "transactionKey"> & {
+  lineIndex: number;
 };
 
 type ImportInput = {
@@ -21,6 +36,12 @@ type ParsedTransactionsImportInput = {
   sourceName: string;
   fingerprintSource: string;
   parsedTransactions: ParsedTransaction[];
+};
+
+type SelectedAccount = {
+  displayName: string;
+  normalizedDisplayName: string;
+  accountNumber: string;
 };
 
 function createFingerprint(value: string) {
@@ -78,6 +99,96 @@ function normalizeHeader(value: string) {
     .toLowerCase();
 }
 
+function normalizeAccountDisplayName(value: string) {
+  return value.replace(/\s*\(([^)]+)\)\s*$/g, "").trim();
+}
+
+function toAccountKey(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = normalizeHeader(value).replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return normalized || null;
+}
+
+function parsePolishNumber(value: string | null | undefined) {
+  const normalized = value?.replace(/\s/g, "").replace(",", ".").trim() ?? "";
+
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function sanitizeAccountNumber(value: string | null | undefined) {
+  const normalized = value?.replace(/['\s]/g, "").trim() ?? "";
+  return normalized || null;
+}
+
+function setInferredAccountNumber(map: Map<string, string>, accountKey: string | null, accountNumber: string | null) {
+  if (!accountKey || !accountNumber) {
+    return;
+  }
+
+  const existing = map.get(accountKey);
+
+  if (!existing) {
+    map.set(accountKey, accountNumber);
+  }
+}
+
+function parseSelectedAccounts(lines: string[], headerIndex: number) {
+  const selectedAccounts: SelectedAccount[] = [];
+  const startIndex = lines.findIndex((line) => line.includes('"Wybrane rachunki:"'));
+
+  if (startIndex === -1) {
+    return selectedAccounts;
+  }
+
+  for (const line of lines.slice(startIndex + 1, headerIndex)) {
+    if (line.includes('"Zastosowane kryteria wyboru"')) {
+      break;
+    }
+
+    const columns = parseCsvLine(line);
+    const displayName = normalizeAccountDisplayName(columns[0] ?? "");
+    const accountNumber = sanitizeAccountNumber(columns[2]);
+
+    if (!displayName || !accountNumber) {
+      continue;
+    }
+
+    selectedAccounts.push({
+      displayName,
+      normalizedDisplayName: normalizeHeader(displayName),
+      accountNumber,
+    });
+  }
+
+  return selectedAccounts;
+}
+
+function buildUniqueSelectedAccountMap(selectedAccounts: SelectedAccount[]) {
+  const counts = new Map<string, number>();
+
+  for (const account of selectedAccounts) {
+    counts.set(account.normalizedDisplayName, (counts.get(account.normalizedDisplayName) ?? 0) + 1);
+  }
+
+  const uniqueAccounts = new Map<string, SelectedAccount>();
+
+  for (const account of selectedAccounts) {
+    if ((counts.get(account.normalizedDisplayName) ?? 0) === 1) {
+      uniqueAccounts.set(account.normalizedDisplayName, account);
+    }
+  }
+
+  return uniqueAccounts;
+}
+
 function parseIngCsv(rawInput: string): ParsedTransaction[] {
   const lines = rawInput
     .split(/\r?\n/)
@@ -89,43 +200,132 @@ function parseIngCsv(rawInput: string): ParsedTransaction[] {
     return [];
   }
 
+  const selectedAccounts = parseSelectedAccounts(lines, headerIndex);
+  const uniqueSelectedAccounts = buildUniqueSelectedAccountMap(selectedAccounts);
+  const selectedAccountsByNumber = new Map(selectedAccounts.map((account) => [account.accountNumber, account]));
+
   const headers = parseCsvLine(lines[headerIndex]);
   const normalizedHeaders = headers.map(normalizeHeader);
-  const dateIndex = normalizedHeaders.indexOf("data transakcji");
+  const transactionDateIndex = normalizedHeaders.indexOf("data transakcji");
+  const bookingDateIndex = normalizedHeaders.indexOf("data ksiegowania");
   const contractorIndex = normalizedHeaders.indexOf("dane kontrahenta");
   const titleIndex = normalizedHeaders.findIndex((header) => header.startsWith("tytu"));
+  const counterpartyAccountIndex = normalizedHeaders.indexOf("nr rachunku");
+  const bankNameIndex = normalizedHeaders.indexOf("nazwa banku");
+  const detailsIndex = normalizedHeaders.indexOf("szczegoly");
+  const externalTransactionIdIndex = normalizedHeaders.indexOf("nr transakcji");
   const amountIndex = normalizedHeaders.indexOf("kwota transakcji (waluta rachunku)");
+  const accountLabelIndex = normalizedHeaders.indexOf("konto");
+  const balanceAfterIndex = normalizedHeaders.indexOf("saldo po transakcji");
 
-  if (dateIndex === -1 || amountIndex === -1) {
+  if (transactionDateIndex === -1 || amountIndex === -1) {
     return [];
   }
 
-  return lines
-    .slice(headerIndex + 1)
-    .map((line) => parseCsvLine(line))
-    .filter((columns) => columns.length > amountIndex)
-    .map((columns) => {
-      const bookingDate = columns[dateIndex]?.trim();
-      const amountRaw = columns[amountIndex]?.trim();
-      const counterparty = columns[contractorIndex]?.trim() || null;
-      const title = columns[titleIndex]?.trim() || "";
-      const amount = Number(amountRaw.replace(/\s/g, "").replace(",", "."));
+  const preparsedTransactions: PreparsedTransaction[] = [];
 
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate) || Number.isNaN(amount) || amount <= 0) {
-        return null;
+  for (const [lineIndex, line] of lines.slice(headerIndex + 1).entries()) {
+    const columns = parseCsvLine(line);
+
+    if (columns.length <= amountIndex) {
+      continue;
+    }
+
+    const transactionDate = columns[transactionDateIndex]?.trim();
+    const bookingDate = columns[bookingDateIndex]?.trim();
+    const effectiveDate = /^\d{4}-\d{2}-\d{2}$/.test(bookingDate)
+      ? bookingDate
+      : /^\d{4}-\d{2}-\d{2}$/.test(transactionDate)
+        ? transactionDate
+        : null;
+    const amount = parsePolishNumber(columns[amountIndex]);
+
+    if (!effectiveDate || amount == null || amount === 0) {
+      continue;
+    }
+
+    const counterparty = columns[contractorIndex]?.trim() || null;
+    const rawTitle = columns[titleIndex]?.trim() || null;
+    const description = [counterparty, rawTitle].filter(Boolean).join(" - ") || "Import z ING";
+    const accountLabel = columns[accountLabelIndex]?.trim() || null;
+    const normalizedAccountLabel = accountLabel ? normalizeHeader(accountLabel) : "";
+    const selectedAccount = normalizedAccountLabel ? uniqueSelectedAccounts.get(normalizedAccountLabel) : undefined;
+
+    preparsedTransactions.push({
+      lineIndex,
+      bookingDate: effectiveDate,
+      amount,
+      description,
+      counterparty,
+      counterpartyAccountNumber: sanitizeAccountNumber(columns[counterpartyAccountIndex]) ?? null,
+      accountKey: toAccountKey(accountLabel),
+      accountLabel,
+      accountNumber: selectedAccount?.accountNumber ?? null,
+      accountDisplayName: selectedAccount?.displayName ?? accountLabel,
+      bankName: columns[bankNameIndex]?.trim() || null,
+      details: columns[detailsIndex]?.trim() || null,
+      rawTitle,
+      externalTransactionId: sanitizeAccountNumber(columns[externalTransactionIdIndex]) ?? null,
+      balanceAfter: parsePolishNumber(columns[balanceAfterIndex]),
+      isInternalTransfer: false,
+    });
+  }
+
+  const transactionsByExternalId = new Map<string, PreparsedTransaction[]>();
+
+  for (const transaction of preparsedTransactions) {
+    if (!transaction.externalTransactionId) {
+      continue;
+    }
+
+    const existing = transactionsByExternalId.get(transaction.externalTransactionId) ?? [];
+    existing.push(transaction);
+    transactionsByExternalId.set(transaction.externalTransactionId, existing);
+  }
+
+  const inferredAccountNumbers = new Map<string, string>();
+
+  for (const transactionGroup of transactionsByExternalId.values()) {
+    const positiveCount = transactionGroup.filter((transaction) => transaction.amount > 0).length;
+    const negativeCount = transactionGroup.filter((transaction) => transaction.amount < 0).length;
+    const groupTotal = transactionGroup.reduce((sum, transaction) => sum + transaction.amount, 0);
+
+    if (positiveCount > 0 && negativeCount > 0 && Math.abs(groupTotal) < 0.01) {
+      for (const transaction of transactionGroup) {
+        transaction.isInternalTransfer = true;
       }
 
-      const description = [counterparty, title].filter(Boolean).join(" - ") || "Import z ING";
+      if (transactionGroup.length === 2) {
+        const [left, right] = transactionGroup;
+        setInferredAccountNumber(inferredAccountNumbers, left.accountKey ?? null, right.counterpartyAccountNumber ?? null);
+        setInferredAccountNumber(inferredAccountNumbers, right.accountKey ?? null, left.counterpartyAccountNumber ?? null);
+      }
+    }
+  }
 
-      return {
-        bookingDate,
-        amount,
-        description,
-        counterparty,
-        transactionKey: createFingerprint(`${bookingDate}|${amount}|${description}|${counterparty || ""}`),
-      };
-    })
-    .filter((value): value is ParsedTransaction => value !== null);
+  return preparsedTransactions.map((transaction) => {
+    const accountNumber = transaction.accountNumber || inferredAccountNumbers.get(transaction.accountKey ?? "") || null;
+    const selectedAccount = accountNumber ? selectedAccountsByNumber.get(accountNumber) : undefined;
+    const accountDisplayName = selectedAccount?.displayName ?? transaction.accountDisplayName ?? transaction.accountLabel;
+
+    return {
+      ...transaction,
+      accountNumber,
+      accountDisplayName,
+      transactionKey: createFingerprint(
+        [
+          transaction.bookingDate,
+          transaction.amount.toFixed(2),
+          transaction.externalTransactionId ?? "",
+          transaction.accountKey ?? "",
+          accountNumber ?? "",
+          transaction.counterpartyAccountNumber ?? "",
+          transaction.rawTitle ?? "",
+          transaction.counterparty ?? "",
+        ].join("|"),
+      ),
+    };
+  });
 }
 
 function parseManualTransactions(rawInput: string): ParsedTransaction[] {
@@ -140,9 +340,9 @@ function parseManualTransactions(rawInput: string): ParsedTransaction[] {
       }
 
       const [bookingDate, amountRaw, description = "Import reczny"] = parts;
-      const amount = Number(amountRaw.replace(/\s/g, "").replace(",", "."));
+      const amount = parsePolishNumber(amountRaw);
 
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate) || Number.isNaN(amount) || amount <= 0) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingDate) || amount == null || amount <= 0) {
         return null;
       }
 
@@ -151,9 +351,20 @@ function parseManualTransactions(rawInput: string): ParsedTransaction[] {
         amount,
         description,
         counterparty: null,
+        counterpartyAccountNumber: null,
+        accountKey: null,
+        accountLabel: null,
+        accountNumber: null,
+        accountDisplayName: null,
+        bankName: null,
+        details: null,
+        rawTitle: description,
+        externalTransactionId: null,
+        balanceAfter: null,
+        isInternalTransfer: false,
         transactionKey: createFingerprint(`${bookingDate}|${amount}|${description}`),
-        };
-      })
+      };
+    })
     .filter((value) => value !== null);
 
   return parsed as ParsedTransaction[];
@@ -173,6 +384,8 @@ export async function rebuildFinancialStateForDates(userId: string, affectedDate
         userId,
         bookingDate: { in: targetDates },
         isExcluded: false,
+        isInternalTransfer: false,
+        amount: { gt: 0 },
       },
       orderBy: [{ bookingDate: "asc" }, { amount: "desc" }, { createdAt: "asc" }],
     }),
@@ -377,6 +590,18 @@ async function persistParsedTransactions(userId: string, input: ParsedTransactio
       amount: new Prisma.Decimal(transaction.amount.toFixed(2)),
       description: transaction.description,
       counterparty: transaction.counterparty,
+      counterpartyAccountNumber: transaction.counterpartyAccountNumber ?? null,
+      accountKey: transaction.accountKey ?? null,
+      accountLabel: transaction.accountLabel ?? null,
+      accountNumber: transaction.accountNumber ?? null,
+      accountDisplayName: transaction.accountDisplayName ?? null,
+      bankName: transaction.bankName ?? null,
+      details: transaction.details ?? null,
+      rawTitle: transaction.rawTitle ?? null,
+      externalTransactionId: transaction.externalTransactionId ?? null,
+      balanceAfter:
+        typeof transaction.balanceAfter === "number" ? new Prisma.Decimal(transaction.balanceAfter.toFixed(2)) : null,
+      isInternalTransfer: transaction.isInternalTransfer ?? false,
       transactionKey: transaction.transactionKey,
     })),
   });

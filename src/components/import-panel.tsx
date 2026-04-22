@@ -94,8 +94,8 @@ export function ImportPanel({ onImported }: ImportPanelProps) {
         <p className={styles.eyebrow}>Import</p>
         <h3>Pierwszy import transakcji</h3>
         <p className={styles.copy}>
-          Wrzuc plik CSV z ING albo wklej prosty format `YYYY-MM-DD;kwota;opis`. Backend zapisze transakcje, przebuduje
-          dni i wygeneruje paczki przelewow.
+          Wrzuc plik CSV z ING albo wklej prosty format `YYYY-MM-DD;kwota;opis`. Backend zapisze pelny przeplyw
+          transakcji, konta i salda, a potem przebuduje dni oraz paczki przelewow.
         </p>
       </div>
 
@@ -134,7 +134,9 @@ export function ImportPanel({ onImported }: ImportPanelProps) {
       </form>
 
       <p className={styles.helper}>
-        {isPending ? "System importuje plik, zapisuje transakcje i przebudowuje dni oraz paczki przelewow." : "Po udanym imporcie odswieza sie historia importow i dane dni."}
+        {isPending
+          ? "System importuje plik, zapisuje konta, transakcje i salda, a potem przebudowuje dni oraz paczki przelewow."
+          : "Po udanym imporcie odswieza sie historia importow, dane dni i rzeczywiste salda kont."}
       </p>
       {error ? <p className={styles.error}>{error}</p> : null}
       {status ? <p className={styles.status}>{status}</p> : null}

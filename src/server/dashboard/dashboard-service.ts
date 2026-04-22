@@ -1,6 +1,7 @@
 import { DailySummaryStatus, PaymentBatchStatus, Prisma } from "@prisma/client";
 import { db } from "@/src/server/db";
 import { ensureDemoUser } from "@/src/server/demo-user";
+import { getAccountBalancesSummary } from "@/src/server/summary/account-balances-service";
 
 function decimalToNumber(value: Prisma.Decimal | number | null | undefined) {
   return value == null ? 0 : Number(value);
@@ -65,7 +66,7 @@ function serializeBatch(batch: PaymentBatchWithItems, date: string) {
 export async function getDashboardSnapshot() {
   const user = await ensureDemoUser();
 
-  const [days, adjustments] = await Promise.all([
+  const [days, accountBalanceSummary] = await Promise.all([
     db.dailySummary.findMany({
       where: { userId: user.id },
       include: {
@@ -77,10 +78,7 @@ export async function getDashboardSnapshot() {
       },
       orderBy: { date: "desc" },
     }),
-    db.subaccountBalanceAdjustment.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: "asc" },
-    }),
+    getAccountBalancesSummary(),
   ]);
 
   const serializedDays = days.map((day) => {
@@ -125,6 +123,10 @@ export async function getDashboardSnapshot() {
             amount: decimalToNumber(transaction.amount),
             description: transaction.description,
             counterparty: transaction.counterparty,
+            accountLabel: transaction.accountLabel,
+            accountNumber: transaction.accountNumber,
+            balanceAfter: decimalToNumber(transaction.balanceAfter),
+            isInternalTransfer: transaction.isInternalTransfer,
             isExcluded: transaction.isExcluded,
             excludedAt: transaction.excludedAt?.toISOString() ?? null,
           })),
@@ -174,57 +176,6 @@ export async function getDashboardSnapshot() {
     transferTitle: dateFrom && dateTo ? buildTransferTitle(item.categoryName, dateFrom, dateTo) : "",
   }));
 
-  const accountMap = new Map<
-    string,
-    {
-      key: string;
-      name: string;
-      targetLabel: string;
-      targetAccountNumber: string;
-      totalAmount: number;
-      pendingAmount: number;
-      adjustmentTotal: number;
-    }
-  >();
-
-  for (const day of serializedDays) {
-    for (const item of day.paymentBatch?.items ?? []) {
-      const key = `${item.targetLabel}|${item.targetAccountNumber}|${item.categoryName}`;
-      const existing = accountMap.get(key) ?? {
-        key,
-        name: item.categoryName,
-        targetLabel: item.targetLabel,
-        targetAccountNumber: item.targetAccountNumber,
-        totalAmount: 0,
-        pendingAmount: 0,
-        adjustmentTotal: 0,
-      };
-
-      existing.totalAmount += item.amount;
-
-      if (day.paymentBatch?.status === PaymentBatchStatus.GENERATED) {
-        existing.pendingAmount += item.amount;
-      }
-
-      accountMap.set(key, existing);
-    }
-  }
-
-  for (const adjustment of adjustments) {
-    const existing = accountMap.get(adjustment.accountKey) ?? {
-      key: adjustment.accountKey,
-      name: adjustment.categoryName,
-      targetLabel: adjustment.targetLabel,
-      targetAccountNumber: adjustment.targetAccountNumber,
-      totalAmount: 0,
-      pendingAmount: 0,
-      adjustmentTotal: 0,
-    };
-
-    existing.adjustmentTotal += decimalToNumber(adjustment.deltaAmount);
-    accountMap.set(adjustment.accountKey, existing);
-  }
-
   return {
     days: serializedDays,
     selectedDate,
@@ -240,15 +191,6 @@ export async function getDashboardSnapshot() {
       dateTo,
       items: openBatchItems,
     },
-    accountBalances: [...accountMap.values()]
-      .map((account) => ({
-        ...account,
-        totalAmount: Number(account.totalAmount.toFixed(2)),
-        pendingAmount: Number(account.pendingAmount.toFixed(2)),
-        settledAmount: Number((account.totalAmount - account.pendingAmount).toFixed(2)),
-        actualBalance: Number((account.totalAmount - account.pendingAmount + account.adjustmentTotal).toFixed(2)),
-        adjustmentTotal: Number(account.adjustmentTotal.toFixed(2)),
-      }))
-      .sort((left, right) => right.actualBalance - left.actualBalance),
+    accountBalances: accountBalanceSummary.accounts,
   };
 }

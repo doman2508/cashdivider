@@ -41,6 +41,10 @@ export type DayDetail = DayListItem & {
     amount: number;
     description: string;
     counterparty: string | null;
+    accountLabel: string | null;
+    accountNumber: string | null;
+    balanceAfter: number;
+    isInternalTransfer: boolean;
     isExcluded: boolean;
     excludedAt: string | null;
   }>;

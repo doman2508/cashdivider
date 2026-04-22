@@ -56,22 +56,34 @@ model Import {
 }
 
 model BankTransaction {
-  id           String   @id @default(cuid())
-  userId       String
-  importId     String?
-  bookingDate  DateTime
-  amount       Decimal  @db.Decimal(12, 2)
-  description  String
-  counterparty String?
-  transactionKey String
-  isExcluded   Boolean  @default(false)
-  excludedAt   DateTime?
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  import       Import?  @relation(fields: [importId], references: [id], onDelete: SetNull)
+  id                     String   @id @default(cuid())
+  userId                 String
+  importId               String?
+  bookingDate            DateTime
+  amount                 Decimal  @db.Decimal(12, 2)
+  description            String
+  counterparty           String?
+  counterpartyAccountNumber String?
+  accountKey             String?
+  accountLabel           String?
+  accountNumber          String?
+  accountDisplayName     String?
+  bankName               String?
+  details                String?
+  rawTitle               String?
+  externalTransactionId  String?
+  balanceAfter           Decimal? @db.Decimal(12, 2)
+  transactionKey         String
+  isInternalTransfer     Boolean  @default(false)
+  isExcluded             Boolean  @default(false)
+  excludedAt             DateTime?
+  createdAt              DateTime @default(now())
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  import                 Import?  @relation(fields: [importId], references: [id], onDelete: SetNull)
 
   @@unique([userId, transactionKey])
   @@index([userId, bookingDate])
+  @@index([userId, accountKey, bookingDate])
 }
 
 model DailySummary {
