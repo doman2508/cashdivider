@@ -70,6 +70,10 @@ export type OpenDaysBatch = {
 
 type DaysFilter = "OPEN" | "SETTLED" | "ALL";
 
+function hasRealAccountNumber(value: string | null | undefined) {
+  return (value?.replace(/\D/g, "").length ?? 0) >= 10;
+}
+
 function pickPreferredDate(days: DayListItem[], current: string | null) {
   if (!days.length) {
     return null;
@@ -293,11 +297,23 @@ export function DaysDashboard({
 
     return day.status === filter;
   });
-  const selectedBatch = selectedDay?.paymentBatch ?? null;
+  const selectedDateInCurrentFilter = selectedDate ? filteredDays.some((day) => day.date === selectedDate) : false;
+  const visibleSelectedDay = selectedDateInCurrentFilter && selectedDay?.date === selectedDate ? selectedDay : null;
+  const selectedBatch = visibleSelectedDay?.paymentBatch ?? null;
   const latestDay = days[0] ?? null;
-  const visibleSelectedDay = selectedDay?.date === selectedDate ? selectedDay : null;
   const openDaysCount = days.filter((day) => day.status === "OPEN").length;
   const settledDaysCount = days.length - openDaysCount;
+  const shouldShowDetailColumns = filteredDays.length > 0 && selectedDateInCurrentFilter;
+
+  useEffect(() => {
+    if (!filteredDays.length) {
+      return;
+    }
+
+    if (!selectedDateInCurrentFilter) {
+      setSelectedDate(filteredDays[0]?.date ?? null);
+    }
+  }, [filteredDays, selectedDateInCurrentFilter]);
 
   return (
     <section className={styles.wrapper}>
@@ -440,13 +456,16 @@ export function DaysDashboard({
             ) : (
               <div className={styles.empty}>
                 {days.length
-                  ? "Brak dni pasujacych do tego filtra."
+                  ? filter === "OPEN"
+                    ? "Wszystkie dni sa teraz rozliczone. Przelacz filtr na Rozliczone lub Wszystkie, jesli chcesz przejrzec historie."
+                    : "Brak dni pasujacych do tego filtra."
                   : "Brak dni w bazie. Zaimportuj pierwszy wyciag, a lista od razu sie wypelni."}
               </div>
             )}
           </div>
         </article>
 
+        {shouldShowDetailColumns ? (
         <article className={styles.panel}>
           <p className={styles.eyebrow}>Wybrany dzien</p>
           <h3>{visibleSelectedDay ? fullDate.format(new Date(visibleSelectedDay.date)) : selectedDate || "Brak danych"}</h3>
@@ -513,9 +532,7 @@ export function DaysDashboard({
                       <div>
                         <p className={styles.checkIndex}>Krok {index + 1}</p>
                         <strong>Przelej na {item.targetLabel}</strong>
-                        <p>
-                          {item.categoryName} - {item.targetAccountNumber}
-                        </p>
+                        <p>{hasRealAccountNumber(item.targetAccountNumber) ? item.targetAccountNumber : item.categoryName}</p>
                         <p className={styles.helperText}>Tytul: {item.transferTitle}</p>
                       </div>
                       <strong className={styles.amountInline}>{pln.format(item.amount)}</strong>
@@ -533,8 +550,10 @@ export function DaysDashboard({
             <div className={styles.empty}>Wybierz dzien z listy albo poczekaj, az import doda pierwsze podsumowanie.</div>
           )}
         </article>
+        ) : null}
       </section>
 
+      {shouldShowDetailColumns ? (
       <section className={styles.grid}>
         <article className={styles.panel}>
           <p className={styles.eyebrow}>Transakcje</p>
@@ -634,6 +653,7 @@ export function DaysDashboard({
           </div>
         </article>
       </section>
+      ) : null}
     </section>
   );
 }

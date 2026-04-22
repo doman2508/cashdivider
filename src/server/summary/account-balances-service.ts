@@ -6,14 +6,56 @@ function decimalToNumber(value: Prisma.Decimal | number | null | undefined) {
   return value == null ? 0 : Number(value);
 }
 
-function normalizeAccountKey(value: string | null | undefined) {
+function normalizeText(value: string | null | undefined) {
   return value
     ?.normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") ?? "";
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim() ?? "";
+}
+
+function normalizeAccountKey(value: string | null | undefined) {
+  return normalizeText(value).replace(/\s+/g, "-");
+}
+
+function normalizeAccountNumber(value: string | null | undefined) {
+  return value?.replace(/\D/g, "") ?? "";
+}
+
+function hasRealAccountNumber(value: string | null | undefined) {
+  return normalizeAccountNumber(value).length >= 10;
+}
+
+function collectSemanticTokens(...values: Array<string | null | undefined>) {
+  const tokens = new Set<string>();
+
+  for (const value of values) {
+    const normalized = normalizeText(value);
+
+    if (!normalized) {
+      continue;
+    }
+
+    tokens.add(normalized);
+
+    if (normalized.includes("podat")) {
+      tokens.add("tax");
+    }
+
+    if (
+      normalized.includes("safe") ||
+      normalized.includes("save") ||
+      normalized.includes("savings") ||
+      normalized.includes("oszczed")
+    ) {
+      tokens.add("savings");
+    }
+  }
+
+  return tokens;
 }
 
 type AccountAccumulator = {
@@ -23,7 +65,19 @@ type AccountAccumulator = {
   targetAccountNumber: string;
   totalAmount: number;
   pendingAmount: number;
-  adjustmentTotal: number;
+  adjustments: Array<{
+    amount: number;
+    createdAt: string;
+  }>;
+};
+
+type ImportedAccountSnapshot = {
+  key: string;
+  name: string;
+  targetLabel: string;
+  targetAccountNumber: string;
+  balance: number;
+  balanceAt: string;
 };
 
 export type AccountBalanceSummary = {
@@ -39,6 +93,65 @@ export type AccountBalanceSummary = {
   importedBalance: number | null;
   importedBalanceAt: string | null;
 };
+
+function scoreImportedAccountMatch(account: AccountAccumulator, importedAccount: ImportedAccountSnapshot) {
+  const accountNumber = normalizeAccountNumber(account.targetAccountNumber);
+  const importedNumber = normalizeAccountNumber(importedAccount.targetAccountNumber);
+
+  if (hasRealAccountNumber(account.targetAccountNumber) && accountNumber === importedNumber) {
+    return 100;
+  }
+
+  const accountLabels = new Set([
+    normalizeText(account.targetLabel),
+    normalizeText(account.name),
+  ]);
+  const importedLabels = new Set([
+    normalizeText(importedAccount.targetLabel),
+    normalizeText(importedAccount.name),
+  ]);
+
+  for (const accountLabel of accountLabels) {
+    if (accountLabel && importedLabels.has(accountLabel)) {
+      return 90;
+    }
+  }
+
+  const accountTokens = collectSemanticTokens(account.targetLabel, account.name);
+  const importedTokens = collectSemanticTokens(importedAccount.targetLabel, importedAccount.name);
+
+  for (const token of accountTokens) {
+    if (importedTokens.has(token)) {
+      return 60;
+    }
+  }
+
+  return 0;
+}
+
+function findMatchingImportedAccount(
+  account: AccountAccumulator,
+  importedAccounts: ImportedAccountSnapshot[],
+  usedImportedAccountKeys: Set<string>,
+) {
+  let bestMatch: ImportedAccountSnapshot | null = null;
+  let bestScore = 0;
+
+  for (const importedAccount of importedAccounts) {
+    if (usedImportedAccountKeys.has(importedAccount.key)) {
+      continue;
+    }
+
+    const score = scoreImportedAccountMatch(account, importedAccount);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = importedAccount;
+    }
+  }
+
+  return bestScore >= 60 ? bestMatch : null;
+}
 
 async function buildAccountBalancesSummary(userId: string) {
   const [days, adjustments, importedBalanceTransactions] = await Promise.all([
@@ -68,55 +181,21 @@ async function buildAccountBalancesSummary(userId: string) {
   ]);
 
   const accounts = new Map<string, AccountAccumulator>();
-  const importedBalances = new Map<
-    string,
-    {
-      balance: number;
-      balanceAt: string;
-      accountLabel: string | null;
-      accountNumber: string | null;
-    }
-  >();
-  const importedAccounts = new Map<
-    string,
-    {
-      key: string;
-      name: string;
-      targetLabel: string;
-      targetAccountNumber: string;
-      balance: number;
-      balanceAt: string;
-    }
-  >();
+  const importedAccounts = new Map<string, ImportedAccountSnapshot>();
 
   for (const transaction of importedBalanceTransactions) {
-    const candidateKeys = [
-      transaction.accountNumber ? `number:${transaction.accountNumber}` : null,
-      transaction.accountKey ? `key:${transaction.accountKey}` : null,
-      transaction.accountLabel ? `label:${normalizeAccountKey(transaction.accountLabel)}` : null,
-    ].filter((value): value is string => Boolean(value));
-
-    for (const candidateKey of candidateKeys) {
-      if (!importedBalances.has(candidateKey)) {
-        importedBalances.set(candidateKey, {
-          balance: decimalToNumber(transaction.balanceAfter),
-          balanceAt: transaction.bookingDate.toISOString(),
-          accountLabel: transaction.accountLabel,
-          accountNumber: transaction.accountNumber,
-        });
-      }
+    if (!transaction.accountKey || importedAccounts.has(transaction.accountKey)) {
+      continue;
     }
 
-    if (transaction.accountKey && !importedAccounts.has(transaction.accountKey)) {
-      importedAccounts.set(transaction.accountKey, {
-        key: transaction.accountKey,
-        name: transaction.accountLabel || transaction.accountDisplayName || "Konto",
-        targetLabel: transaction.accountLabel || transaction.accountDisplayName || "Konto",
-        targetAccountNumber: transaction.accountNumber || transaction.accountLabel || transaction.accountKey,
-        balance: decimalToNumber(transaction.balanceAfter),
-        balanceAt: transaction.bookingDate.toISOString(),
-      });
-    }
+    importedAccounts.set(transaction.accountKey, {
+      key: transaction.accountKey,
+      name: transaction.accountLabel || transaction.accountDisplayName || "Konto",
+      targetLabel: transaction.accountLabel || transaction.accountDisplayName || "Konto",
+      targetAccountNumber: transaction.accountNumber || transaction.accountLabel || transaction.accountKey,
+      balance: decimalToNumber(transaction.balanceAfter),
+      balanceAt: transaction.bookingDate.toISOString(),
+    });
   }
 
   for (const day of days) {
@@ -129,7 +208,7 @@ async function buildAccountBalancesSummary(userId: string) {
         targetAccountNumber: item.targetAccountNumber,
         totalAmount: 0,
         pendingAmount: 0,
-        adjustmentTotal: 0,
+        adjustments: [],
       };
 
       const amount = decimalToNumber(item.amount);
@@ -151,49 +230,72 @@ async function buildAccountBalancesSummary(userId: string) {
       targetAccountNumber: adjustment.targetAccountNumber,
       totalAmount: 0,
       pendingAmount: 0,
-      adjustmentTotal: 0,
+      adjustments: [],
     };
 
-    existing.adjustmentTotal += decimalToNumber(adjustment.deltaAmount);
+    existing.adjustments.push({
+      amount: decimalToNumber(adjustment.deltaAmount),
+      createdAt: adjustment.createdAt.toISOString(),
+    });
     accounts.set(adjustment.accountKey, existing);
   }
 
-  for (const importedAccount of importedAccounts.values()) {
-    if (!accounts.has(importedAccount.key)) {
-      accounts.set(importedAccount.key, {
-        key: importedAccount.key,
-        name: importedAccount.name,
-        targetLabel: importedAccount.targetLabel,
-        targetAccountNumber: importedAccount.targetAccountNumber,
-        totalAmount: 0,
-        pendingAmount: 0,
-        adjustmentTotal: 0,
-      });
+  const importedAccountsList = [...importedAccounts.values()];
+  const usedImportedAccountKeys = new Set<string>();
+  const summaries: AccountBalanceSummary[] = [];
+
+  for (const account of accounts.values()) {
+    const settledAmount = account.totalAmount - account.pendingAmount;
+    const matchedImportedAccount = findMatchingImportedAccount(account, importedAccountsList, usedImportedAccountKeys);
+
+    if (matchedImportedAccount) {
+      usedImportedAccountKeys.add(matchedImportedAccount.key);
     }
+
+    const importedBalance = matchedImportedAccount?.balance ?? null;
+    const importedBalanceAt = matchedImportedAccount?.balanceAt ?? null;
+    const effectiveAdjustments = importedBalanceAt
+      ? account.adjustments.filter((adjustment) => adjustment.createdAt > importedBalanceAt)
+      : account.adjustments;
+    const adjustmentTotal = effectiveAdjustments.reduce((sum, adjustment) => sum + adjustment.amount, 0);
+    const baseBalance = importedBalance ?? settledAmount;
+
+    summaries.push({
+      key: account.key,
+      name: account.name,
+      targetLabel: account.targetLabel,
+      targetAccountNumber: account.targetAccountNumber,
+      totalAmount: Number(account.totalAmount.toFixed(2)),
+      pendingAmount: Number(account.pendingAmount.toFixed(2)),
+      settledAmount: Number(settledAmount.toFixed(2)),
+      actualBalance: Number((baseBalance + adjustmentTotal).toFixed(2)),
+      adjustmentTotal: Number(adjustmentTotal.toFixed(2)),
+      importedBalance: importedBalance != null ? Number(importedBalance.toFixed(2)) : null,
+      importedBalanceAt,
+    });
   }
 
-  return Array.from(accounts.values())
-    .map((account) => {
-      const settledAmount = account.totalAmount - account.pendingAmount;
-      const importedBalance =
-        importedBalances.get(`number:${account.targetAccountNumber}`) ||
-        importedBalances.get(`label:${normalizeAccountKey(account.targetLabel)}`) ||
-        importedBalances.get(`label:${normalizeAccountKey(account.name)}`) ||
-        null;
-      const baseBalance = importedBalance ? importedBalance.balance : settledAmount;
+  for (const importedAccount of importedAccountsList) {
+    if (usedImportedAccountKeys.has(importedAccount.key)) {
+      continue;
+    }
 
-      return {
-        ...account,
-        totalAmount: Number(account.totalAmount.toFixed(2)),
-        pendingAmount: Number(account.pendingAmount.toFixed(2)),
-        settledAmount: Number(settledAmount.toFixed(2)),
-        actualBalance: Number((baseBalance + account.adjustmentTotal).toFixed(2)),
-        adjustmentTotal: Number(account.adjustmentTotal.toFixed(2)),
-        importedBalance: importedBalance ? Number(importedBalance.balance.toFixed(2)) : null,
-        importedBalanceAt: importedBalance?.balanceAt ?? null,
-      };
-    })
-    .sort((left, right) => right.actualBalance - left.actualBalance);
+    summaries.push({
+      key: importedAccount.key,
+      name: importedAccount.name,
+      targetLabel: importedAccount.targetLabel,
+      targetAccountNumber: importedAccount.targetAccountNumber,
+      totalAmount: 0,
+      pendingAmount: 0,
+      settledAmount: 0,
+      actualBalance: Number(importedAccount.balance.toFixed(2)),
+      adjustmentTotal: 0,
+      importedBalance: Number(importedAccount.balance.toFixed(2)),
+      importedBalanceAt: importedAccount.balanceAt,
+    });
+  }
+
+  return summaries.sort((left, right) => right.actualBalance - left.actualBalance);
 }
 
 export async function getAccountBalancesSummary() {
