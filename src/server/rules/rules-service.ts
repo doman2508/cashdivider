@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { db } from "@/src/server/db";
 import { ensureDemoUser } from "@/src/server/demo-user";
-import { rebuildFinancialStateForDates } from "@/src/server/imports/imports-service";
+import { rebuildFinancialStateForUser } from "@/src/server/imports/imports-service";
 import type { RuleInput } from "@/src/server/rules/rule-schema";
 
 function serializeRule(rule: {
@@ -35,17 +35,7 @@ export async function listRules() {
 }
 
 async function rebuildAllUserDays(userId: string) {
-  const transactionDates = await db.bankTransaction.findMany({
-    where: { userId },
-    select: { bookingDate: true },
-    distinct: ["bookingDate"],
-    orderBy: { bookingDate: "desc" },
-  });
-
-  await rebuildFinancialStateForDates(
-    userId,
-    transactionDates.map((entry) => entry.bookingDate.toISOString().slice(0, 10)),
-  );
+  await rebuildFinancialStateForUser(userId);
 }
 
 function rebuildAllUserDaysInBackground(userId: string) {

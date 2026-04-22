@@ -29,15 +29,18 @@ const emptyForm: FormState = {
 
 type RulesManagerProps = {
   initialRules?: Rule[];
+  initialAccountingStartDate?: string | null;
 };
 
-export function RulesManager({ initialRules = [] }: RulesManagerProps) {
+export function RulesManager({ initialRules = [], initialAccountingStartDate = null }: RulesManagerProps) {
   const [rules, setRules] = useState<Rule[]>(initialRules);
+  const [accountingStartDate, setAccountingStartDate] = useState(initialAccountingStartDate ?? "");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isSettingsPending, startSettingsTransition] = useTransition();
 
   useEffect(() => {
     if (!initialRules.length) {
@@ -59,6 +62,35 @@ export function RulesManager({ initialRules = [] }: RulesManagerProps) {
     setForm(emptyForm);
     setEditingId(null);
     setError(null);
+  }
+
+  function saveAccountingStartDate() {
+    setError(null);
+    setInfo(null);
+
+    startSettingsTransition(async () => {
+      const response = await fetch("/api/settings/accounting", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountingStartDate: accountingStartDate || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json()) as { message?: string };
+        setError(body.message || "Nie udalo sie zapisac daty startu rozliczen.");
+        return;
+      }
+
+      const body = (await response.json()) as { data: { accountingStartDate: string | null } };
+      setAccountingStartDate(body.data.accountingStartDate ?? "");
+      setInfo(
+        body.data.accountingStartDate
+          ? "Start rozliczen zapisany. Starsze dni zostaly odciete od paczek i zaleglosci."
+          : "Start rozliczen wyczyszczony. System znowu uwzglednia caly okres importu.",
+      );
+    });
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -155,6 +187,42 @@ export function RulesManager({ initialRules = [] }: RulesManagerProps) {
         </p>
       </div>
 
+      <section className={styles.panel}>
+        <p className={styles.eyebrow}>Zakres rozliczen</p>
+        <h3>Start rozliczen</h3>
+        <p className={styles.copy}>
+          System dalej widzi cala historie transakcji i salda kont, ale dni, paczki i zaleglosci liczy dopiero od tej daty.
+        </p>
+        <div className={styles.settingsRow}>
+          <label className={styles.inlineLabel}>
+            Data startu
+            <input
+              type="date"
+              value={accountingStartDate}
+              onChange={(event) => setAccountingStartDate(event.target.value)}
+            />
+          </label>
+          <div className={styles.buttonRow}>
+            <button className={styles.primaryButton} type="button" onClick={saveAccountingStartDate} disabled={isSettingsPending}>
+              {isSettingsPending ? "Zapisywanie..." : "Zapisz start"}
+            </button>
+            <button
+              className={styles.ghostButton}
+              type="button"
+              onClick={() => setAccountingStartDate("")}
+              disabled={isSettingsPending}
+            >
+              Wyczysc date
+            </button>
+          </div>
+        </div>
+        {accountingStartDate ? (
+          <p className={styles.helperText}>Aktywny start rozliczen: {accountingStartDate}.</p>
+        ) : (
+          <p className={styles.helperText}>Brak daty granicznej. System liczy caly dostepny okres.</p>
+        )}
+      </section>
+
       <section className={styles.grid}>
         <article className={styles.panel}>
           <p className={styles.eyebrow}>{editingId ? "Edycja reguly" : "Nowa regula"}</p>
@@ -198,11 +266,11 @@ export function RulesManager({ initialRules = [] }: RulesManagerProps) {
             </label>
 
             <div className={styles.buttonRow}>
-              <button className={styles.primaryButton} type="submit" disabled={isPending}>
+              <button className={styles.primaryButton} type="submit" disabled={isPending || isSettingsPending}>
                 {editingId ? "Zapisz zmiany" : "Dodaj regule"}
               </button>
               {editingId ? (
-                <button className={styles.ghostButton} type="button" onClick={resetForm} disabled={isPending}>
+                <button className={styles.ghostButton} type="button" onClick={resetForm} disabled={isPending || isSettingsPending}>
                   Anuluj edycje
                 </button>
               ) : null}
@@ -232,14 +300,14 @@ export function RulesManager({ initialRules = [] }: RulesManagerProps) {
                   <div className={styles.itemActions}>
                     <span className={styles.status}>{rule.percentage}%</span>
                     <div className={styles.buttonRow}>
-                      <button className={styles.editButton} type="button" onClick={() => startEdit(rule)} disabled={isPending}>
+                      <button className={styles.editButton} type="button" onClick={() => startEdit(rule)} disabled={isPending || isSettingsPending}>
                         Edytuj
                       </button>
                       <button
                         className={styles.deleteButton}
                         type="button"
                         onClick={() => handleDelete(rule.id)}
-                        disabled={isPending}
+                        disabled={isPending || isSettingsPending}
                       >
                         Usun
                       </button>

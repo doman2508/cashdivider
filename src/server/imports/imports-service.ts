@@ -59,6 +59,10 @@ function toUtcDateOnly(value: string) {
   return new Date(`${value}T00:00:00.000Z`);
 }
 
+function shortIsoDate(value: Date) {
+  return value.toISOString().slice(0, 10);
+}
+
 function parseCsvLine(line: string) {
   const values: string[] = [];
   let current = "";
@@ -370,8 +374,20 @@ function parseManualTransactions(rawInput: string): ParsedTransaction[] {
   return parsed as ParsedTransaction[];
 }
 
+async function getAccountingStartDate(userId: string) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { accountingStartDate: true },
+  });
+
+  return user?.accountingStartDate ? shortIsoDate(user.accountingStartDate) : null;
+}
+
 export async function rebuildFinancialStateForDates(userId: string, affectedDates: string[]) {
-  const uniqueDates = [...new Set(affectedDates)].sort();
+  const accountingStartDate = await getAccountingStartDate(userId);
+  const uniqueDates = [...new Set(affectedDates)]
+    .sort()
+    .filter((date) => !accountingStartDate || date >= accountingStartDate);
 
   if (!uniqueDates.length) {
     return;
@@ -525,6 +541,42 @@ export async function rebuildFinancialStateForDates(userId: string, affectedDate
       });
     }
   }
+}
+
+export async function rebuildFinancialStateForUser(userId: string) {
+  const accountingStartDate = await getAccountingStartDate(userId);
+
+  if (accountingStartDate) {
+    await db.dailySummary.deleteMany({
+      where: {
+        userId,
+        date: {
+          lt: toUtcDateOnly(accountingStartDate),
+        },
+      },
+    });
+  }
+
+  const transactionDates = await db.bankTransaction.findMany({
+    where: {
+      userId,
+      ...(accountingStartDate
+        ? {
+            bookingDate: {
+              gte: toUtcDateOnly(accountingStartDate),
+            },
+          }
+        : {}),
+    },
+    select: { bookingDate: true },
+    distinct: ["bookingDate"],
+    orderBy: { bookingDate: "desc" },
+  });
+
+  await rebuildFinancialStateForDates(
+    userId,
+    transactionDates.map((entry) => shortIsoDate(entry.bookingDate)),
+  );
 }
 
 async function persistParsedTransactions(userId: string, input: ParsedTransactionsImportInput) {

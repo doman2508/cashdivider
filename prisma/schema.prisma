@@ -12,6 +12,7 @@ model User {
   email          String           @unique
   passwordHash   String?
   passwordSalt   String?
+  accountingStartDate DateTime?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   rules          AllocationRule[]

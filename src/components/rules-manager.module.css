@@ -43,6 +43,22 @@
   font-size: 0.9rem;
 }
 
+.settingsRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.inlineLabel {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  min-width: 220px;
+}
+
 .buttonRow {
   display: flex;
   gap: 0.6rem;

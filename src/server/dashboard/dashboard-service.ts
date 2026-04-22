@@ -134,7 +134,9 @@ export async function getDashboardSnapshot() {
       })()
     : null;
 
-  const openDays = serializedDays.filter((day) => day.status === DailySummaryStatus.OPEN && day.includeInBatch);
+  const openDays = serializedDays
+    .filter((day) => day.status === DailySummaryStatus.OPEN && day.includeInBatch)
+    .sort((left, right) => left.date.localeCompare(right.date));
   const dateFrom = openDays[0]?.date ?? null;
   const dateTo = openDays[openDays.length - 1]?.date ?? null;
   const openBatchMap = new Map<
