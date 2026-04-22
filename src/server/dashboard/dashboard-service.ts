@@ -65,17 +65,23 @@ function serializeBatch(batch: PaymentBatchWithItems, date: string) {
 export async function getDashboardSnapshot() {
   const user = await ensureDemoUser();
 
-  const days = await db.dailySummary.findMany({
-    where: { userId: user.id },
-    include: {
-      paymentBatch: {
-        include: {
-          items: true,
+  const [days, adjustments] = await Promise.all([
+    db.dailySummary.findMany({
+      where: { userId: user.id },
+      include: {
+        paymentBatch: {
+          include: {
+            items: true,
+          },
         },
       },
-    },
-    orderBy: { date: "desc" },
-  });
+      orderBy: { date: "desc" },
+    }),
+    db.subaccountBalanceAdjustment.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "asc" },
+    }),
+  ]);
 
   const serializedDays = days.map((day) => {
     const date = shortIsoDate(day.date);
@@ -177,7 +183,7 @@ export async function getDashboardSnapshot() {
       targetAccountNumber: string;
       totalAmount: number;
       pendingAmount: number;
-      settledAmount: number;
+      adjustmentTotal: number;
     }
   >();
 
@@ -191,7 +197,7 @@ export async function getDashboardSnapshot() {
         targetAccountNumber: item.targetAccountNumber,
         totalAmount: 0,
         pendingAmount: 0,
-        settledAmount: 0,
+        adjustmentTotal: 0,
       };
 
       existing.totalAmount += item.amount;
@@ -202,6 +208,21 @@ export async function getDashboardSnapshot() {
 
       accountMap.set(key, existing);
     }
+  }
+
+  for (const adjustment of adjustments) {
+    const existing = accountMap.get(adjustment.accountKey) ?? {
+      key: adjustment.accountKey,
+      name: adjustment.categoryName,
+      targetLabel: adjustment.targetLabel,
+      targetAccountNumber: adjustment.targetAccountNumber,
+      totalAmount: 0,
+      pendingAmount: 0,
+      adjustmentTotal: 0,
+    };
+
+    existing.adjustmentTotal += decimalToNumber(adjustment.deltaAmount);
+    accountMap.set(adjustment.accountKey, existing);
   }
 
   return {
@@ -225,7 +246,9 @@ export async function getDashboardSnapshot() {
         totalAmount: Number(account.totalAmount.toFixed(2)),
         pendingAmount: Number(account.pendingAmount.toFixed(2)),
         settledAmount: Number((account.totalAmount - account.pendingAmount).toFixed(2)),
+        actualBalance: Number((account.totalAmount - account.pendingAmount + account.adjustmentTotal).toFixed(2)),
+        adjustmentTotal: Number(account.adjustmentTotal.toFixed(2)),
       }))
-      .sort((left, right) => right.totalAmount - left.totalAmount),
+      .sort((left, right) => right.actualBalance - left.actualBalance),
   };
 }
